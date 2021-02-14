@@ -70,7 +70,7 @@ def get_schedule(data):  # 返回值说明： 开始周次，结束周次，星�
                 start_class = schedule.split("-")[0]
                 end_class = schedule.split("-")[1]
                 return start_week, end_week, week_day, False, start_class, end_class
-    else:
+    else:# 当带有分割的周次时候不返回任何值
         if "星期" not in data[2]:
             all_date = list(data[2])
             del all_date[-1]
@@ -145,8 +145,6 @@ def if_separate_time(data):
 
 def main():
     data = read_data(base_dir)
-    # print(data[19])
-    # get_schedule(data[31])
 
     cal = Calendar()
     cal.add('prodid', '-//CQU//CQU Calendar//')
