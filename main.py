@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from icalendar import Calendar, Event, Alarm
-import re, uuid, datetime, pytz
+import re, uuid, datetime, pytz, os
 
 base_dir = '/home/ddqi/kb.xlsx'
 start_date = '20210301'
@@ -33,6 +33,7 @@ week_dic = {
     "日": 7,
     "全": 0,
 }
+tmp = []
 
 
 def read_data(base_dir):
@@ -42,32 +43,45 @@ def read_data(base_dir):
 
 
 def get_schedule(data):  # 返回值说明： 开始周次，结束周次，星期几，是否整周，开始节数，结束节数
-    if "星期" not in data[2]:
-        all_date = list(data[2])
-        del all_date[-1]
-        if "-" in all_date:  # 生产实习或者实验什么的课设啥的没具体排课的
-            date_during = "".join(all_date).split("-")
-            return date_during[0], date_during[1], "全", True, "1", "12"
-        else:  # 万一就一周呢...
-            date_during = "".join(all_date)
-            return date_during, date_during, "", True, "1", "12"
-    else:  # 其他具体排课了的
-        date = re.split("周星期", data[2])
-        week_day = date[1][0]
-        if "-" in date[0]:
-            start_week = date[0].split("-")[0]
-            end_week = date[0].split("-")[1]
-            schedule = date[1][1:-1]
-            start_class = schedule.split("-")[0]
-            end_class = schedule.split("-")[1]
-            return start_week, end_week, week_day, False, start_class, end_class
+    if if_separate_time(data) is not True:
+        if "星期" not in data[2]:
+            all_date = list(data[2])
+            del all_date[-1]
+            if "-" in all_date:  # 生产实习或者实验什么的课设啥的没具体排课的
+                date_during = "".join(all_date).split("-")
+                return date_during[0], date_during[1], "全", True, "1", "12"
+            else:  # 万一就一周呢...
+                date_during = "".join(all_date)
+                return date_during, date_during, "全", True, "1", "12"
+        else:  # 其他具体排课了的
+            date = re.split("周星期", data[2])
+            week_day = date[1][0]
+            if "-" in date[0]:
+                start_week = date[0].split("-")[0]
+                end_week = date[0].split("-")[1]
+                schedule = date[1][1:-1]
+                start_class = schedule.split("-")[0]
+                end_class = schedule.split("-")[1]
+                return start_week, end_week, week_day, False, start_class, end_class
+            else:
+                start_week = date[0]
+                end_week = start_week
+                schedule = date[1][1:-1]
+                start_class = schedule.split("-")[0]
+                end_class = schedule.split("-")[1]
+                return start_week, end_week, week_day, False, start_class, end_class
+    else:
+        if "星期" not in data[2]:
+            all_date = list(data[2])
+            del all_date[-1]
+            week_slice = "".join(all_date).split(",")
+            for items in week_slice:
+                tmp.append([data[0], data[1], items + "周", data[3], data[4]])
         else:
-            start_week = date[0]
-            end_week = start_week
-            schedule = date[1][1:-1]
-            start_class = schedule.split("-")[0]
-            end_class = schedule.split("-")[1]
-            return start_week, end_week, week_day, False, start_class, end_class
+            date = re.split("周星期", data[2])
+            all_week = date[0].split(",")
+            for items in all_week:
+                tmp.append([data[0], data[1], items + "周星期" + date[1], data[3], data[4]])
 
 
 def mkcal(data, cal):
@@ -94,14 +108,13 @@ def mkcal(data, cal):
         class_end_time = (dt2 + datetime.timedelta(minutes=end_time_minute)).strftime("%H%M%S")
         dtend = class_start_date + "T" + class_end_time
 
-
         event.add('DTEND;TZID=Asia/Shanghai', dtend)
         event.add('DTSTART;TZID=Asia/Shanghai', dtstart)
 
         timestamp = datetime.datetime.now()
         event.add('DTSTAMP;VALUE=DATE',
                   datetime.datetime(timestamp.year, timestamp.month, timestamp.day, timestamp.hour, timestamp.minute,
-                           timestamp.second, tzinfo=pytz.utc))
+                                    timestamp.second, tzinfo=pytz.utc))
         cal.add_component(event)
 
     else:
@@ -119,21 +132,41 @@ def mkcal(data, cal):
         event.add('DTEND;TZID=Asia/Shanghai', dtend)
         event.add('DTSTART;TZID=Asia/Shanghai', dtstart)
         timestamp = datetime.datetime.now()
-        event.add('DTSTAMP;VALUE=DATE',datetime.datetime(timestamp.year, timestamp.month, timestamp.day, timestamp.hour, timestamp.minute,timestamp.second, tzinfo=pytz.utc))
+        event.add('DTSTAMP;VALUE=DATE',
+                  datetime.datetime(timestamp.year, timestamp.month, timestamp.day, timestamp.hour, timestamp.minute,
+                                    timestamp.second, tzinfo=pytz.utc))
         cal.add_component(event)
+
+
+def if_separate_time(data):
+    if "," in data[2]:
+        return True
 
 
 def main():
     data = read_data(base_dir)
+    # print(data[19])
+    # get_schedule(data[31])
+
     cal = Calendar()
     cal.add('prodid', '-//CQU//CQU Calendar//')
     cal.add('version', '2.0')
     for items in data:
-        mkcal(items, cal)
-
-    f = open('timetable.ics', 'wb')
-    f.write(cal.to_ical())
-    f.close()
+        if if_separate_time(items) is not True:
+            mkcal(items, cal)
+        else:
+            get_schedule(items)
+    tmp_data = np.array(tmp)
+    if tmp_data.size == 0:
+        f = open('timetable.ics', 'wb')
+        f.write(cal.to_ical())
+        f.close()
+    else:
+        for alter in tmp_data:
+            mkcal(alter, cal)
+        f = open('timetable.ics', 'wb')
+        f.write(cal.to_ical())
+        f.close()
 
 
 if __name__ == "__main__":
