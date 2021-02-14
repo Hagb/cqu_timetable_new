@@ -94,8 +94,10 @@ def mkcal(data, cal):
         class_end_time = (dt2 + datetime.timedelta(minutes=end_time_minute)).strftime("%H%M%S")
         dtend = class_start_date + "T" + class_end_time
 
-        event.add('DTSTART;VALUE=DATE', dtstart)
-        event.add('DTEND;VALUE=DATE', dtend)
+
+        event.add('DTEND;TZID=Asia/Shanghai', dtend)
+        event.add('DTSTART;TZID=Asia/Shanghai', dtstart)
+
         timestamp = datetime.datetime.now()
         event.add('DTSTAMP;VALUE=DATE',
                   datetime.datetime(timestamp.year, timestamp.month, timestamp.day, timestamp.hour, timestamp.minute,
@@ -113,8 +115,9 @@ def mkcal(data, cal):
 
         dtstart = class_start_date + "T" + class_start_time
         dtend = class_start_date + "T" + class_end_time
-        event.add('DTSTART;VALUE=DATE', dtstart)
-        event.add('DTEND;VALUE=DATE', dtend)
+
+        event.add('DTEND;TZID=Asia/Shanghai', dtend)
+        event.add('DTSTART;TZID=Asia/Shanghai', dtstart)
         timestamp = datetime.datetime.now()
         event.add('DTSTAMP;VALUE=DATE',datetime.datetime(timestamp.year, timestamp.month, timestamp.day, timestamp.hour, timestamp.minute,timestamp.second, tzinfo=pytz.utc))
         cal.add_component(event)
