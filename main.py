@@ -120,10 +120,12 @@ def mkcal(data, cal):
     start_week, end_week, week_day, all_week, start_class, end_class = get_schedule(data)
     event = Event()
     event.add('SUMMARY', data[0])
-    if data[4] != "NaN":
+    if data[3] is not None:
         event.add('LOCATION', data[3])
-    event.add('DESCRIPTION', "教师:" + data[4] + "\n教学班号:" + data[1])
-
+    if data[4] is not None:
+        event.add('DESCRIPTION', "教师:" + data[4] + "\n教学班号:" + data[1])
+    else:
+        event.add('DESCRIPTION', "教学班号:" + data[1])
     if all_week is False:
         count = int(end_week) - int(start_week) + 1
         event.add("RRULE", {"freq": "weekly", "count": count})
