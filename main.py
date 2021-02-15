@@ -1,10 +1,8 @@
 import configparser
 import datetime
-import os
 import re
 import uuid
-import numpy as np
-import pandas as pd
+from openpyxl import load_workbook
 from icalendar import Calendar, Event, Timezone, vDDDTypes
 
 
@@ -60,9 +58,8 @@ tmp = []
 
 
 def read_data(base_dir):
-    df = np.array(pd.read_excel(base_dir, sheet_name=0))
-    data = np.delete(df, 0, axis=0)
-    return data
+    ws = load_workbook(base_dir, read_only=True, data_only=True).worksheets[0]
+    return tuple(ws.values)[2:]
 
 
 def get_schedule(data):  # 返回值说明： 开始周次，结束周次，星期几，是否整周，开始节数，结束节数
@@ -174,21 +171,12 @@ def main():
             mkcal(items, cal)
         else:
             get_schedule(items)
-    tmp_data = np.array(tmp)
 
-    if os.path.exists(file_name):
-        os.remove(file_name)
-
-    if tmp_data.size == 0:
-        f = open(file_name, 'wb')
-        f.write(cal.to_ical())
-        f.close()
-    else:
-        for alter in tmp_data:
-            mkcal(alter, cal)
-        f = open(file_name, 'wb')
-        f.write(cal.to_ical())
-        f.close()
+    for alter in tmp:
+        mkcal(alter, cal)
+    f = open(file_name, 'wb')
+    f.write(cal.to_ical())
+    f.close()
 
 
 if __name__ == "__main__":
