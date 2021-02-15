@@ -1,13 +1,25 @@
 import pandas as pd
 import numpy as np
-from icalendar import Calendar, Event, Alarm
+from icalendar import Calendar, Event, Alarm, Timezone, vDDDTypes
 import re, uuid, datetime, pytz, os
 
+VTIMEZONE = Timezone.from_ical("""BEGIN:VTIMEZONE
+TZID:Asia/Shanghai
+X-LIC-LOCATION:Asia/Shanghai
+BEGIN:STANDARD
+TZNAME:CST
+TZOFFSETFROM:+0800
+TZOFFSETTO:+0800
+DTSTART:19700101T000000
+END:STANDARD
+END:VTIMEZONE""")
+TIMEZONE = VTIMEZONE.to_tz()
 base_dir = '/home/ddqi/kb.xlsx'
 start_date = '20210301'
 year = '2021'
 month = '03'
 day = '01'
+dt = datetime.datetime(int(year),int(month),int(day),tzinfo=TIMEZONE)
 time_dict = {
     1: [(8, 30), (9, 15)],
     2: [(9, 25), (10, 10)],
@@ -83,13 +95,21 @@ def get_schedule(data):  # 返回值说明： 开始周次，结束周次，星�
             for items in all_week:
                 tmp.append([data[0], data[1], items + "周星期" + date[1], data[3], data[4]])
 
+def add_datetime(component, name, time):
+    """一个跳过带时区的时间中 VALUE 属性的 workaround
+
+    某些日历软件无法正常解析同时带 TZID 和 VALUE 属性的时间。
+    详见 https://github.com/collective/icalendar/issues/75 。
+    """
+    vdatetime = vDDDTypes(time)
+    if 'VALUE' in vdatetime.params and 'TZID' in vdatetime.params:
+        vdatetime.params.pop('VALUE')
+    component.add(name, vdatetime)
 
 def mkcal(data, cal):
-    start_day = year + "-" + month + "-" + day
     start_week, end_week, week_day, all_week, start_class, end_class = get_schedule(data)
     event = Event()
     event.add('SUMMARY', data[0])
-    event.add('UID', uuid.uuid4())
     if data[4] is not None:
         event.add('LOCATION', data[3])
     event.add('DESCRIPTION', "教师:" + data[4] + "\n教学班号:" + data[1])
@@ -97,45 +117,29 @@ def mkcal(data, cal):
     if all_week is False:
         count = int(end_week) - int(start_week) + 1
         event.add("RRULE", {"freq": "weekly", "count": count})
-        delta_day_start = (int(start_week) - 1) * 7 + week_dic[week_day] - 1
-        dt = datetime.datetime.strptime(start_day, "%Y-%m-%d")
-        class_start_date = (dt + datetime.timedelta(days=delta_day_start)).strftime("%Y%m%d")
-        dt2 = datetime.datetime.strptime(class_start_date, "%Y%m%d")
-        start_time_minute = time_dict[int(start_class)][0][0] * 60 + time_dict[int(start_class)][0][1]
-        class_start_time = (dt2 + datetime.timedelta(minutes=start_time_minute)).strftime("%H%M%S")
-        dtstart = class_start_date + "T" + class_start_time
-        end_time_minute = time_dict[int(end_class)][1][0] * 60 + time_dict[int(end_class)][1][1]
-        class_end_time = (dt2 + datetime.timedelta(minutes=end_time_minute)).strftime("%H%M%S")
-        dtend = class_start_date + "T" + class_end_time
-
-        event.add('DTEND;TZID=Asia/Shanghai', dtend)
-        event.add('DTSTART;TZID=Asia/Shanghai', dtstart)
-
-        timestamp = datetime.datetime.now()
-        event.add('DTSTAMP;VALUE=DATE',
-                  datetime.datetime(timestamp.year, timestamp.month, timestamp.day, timestamp.hour, timestamp.minute,
-                                    timestamp.second, tzinfo=pytz.utc))
-        cal.add_component(event)
-
+        class_start_date = dt + datetime.timedelta(weeks=int(start_week) - 1, days=week_dic[week_day] - 1)
+        class_start_time = datetime.timedelta(hours=time_dict[int(start_class)][0][0], minutes=time_dict[int(start_class)][0][1])
+        class_end_time = datetime.timedelta(hours=time_dict[int(end_class)][1][0], minutes=time_dict[int(end_class)][1][1])
     else:
-        delta_day_start = (int(start_week) - 1) * 7
-        dt = datetime.datetime.strptime(start_day, "%Y-%m-%d")
-        class_start_time = "083000"
-        class_end_time = "213500"
-        class_start_date = (dt + datetime.timedelta(days=delta_day_start)).strftime("%Y%m%d")
+        class_start_time = datetime.timedelta(hours=8,minutes=30)
+        class_end_time = datetime.timedelta(hours=21,minutes=35)
+        class_start_date = dt + datetime.timedelta(weeks=int(start_week) - 1)
         count = (int(end_week) - int(start_week) + 1) * 7
         event.add("RRULE", {"freq": "daily", "count": count})
 
-        dtstart = class_start_date + "T" + class_start_time
-        dtend = class_start_date + "T" + class_end_time
+    dtstart = class_start_date + class_start_time
+    dtend = class_start_date + class_end_time
+    namespace = uuid.UUID(
+        bytes=int(dtstart.timestamp()).to_bytes(length=8, byteorder='big') +
+        int(dtend.timestamp()).to_bytes(length=8, byteorder='big')
+    )
 
-        event.add('DTEND;TZID=Asia/Shanghai', dtend)
-        event.add('DTSTART;TZID=Asia/Shanghai', dtstart)
-        timestamp = datetime.datetime.now()
-        event.add('DTSTAMP;VALUE=DATE',
-                  datetime.datetime(timestamp.year, timestamp.month, timestamp.day, timestamp.hour, timestamp.minute,
-                                    timestamp.second, tzinfo=pytz.utc))
-        cal.add_component(event)
+    add_datetime(event, 'DTEND', dtend)
+    add_datetime(event, 'DTSTART', dtstart)
+    event.add('UID', uuid.uuid3(namespace, data[0] + "-" + data[1]))
+
+    event.add('DTSTAMP', datetime.datetime.now())
+    cal.add_component(event)
 
 
 def if_separate_time(data):
@@ -149,6 +153,7 @@ def main():
     cal = Calendar()
     cal.add('prodid', '-//CQU//CQU Calendar//')
     cal.add('version', '2.0')
+    cal.add_component(VTIMEZONE)
     for items in data:
         if if_separate_time(items) is not True:
             mkcal(items, cal)
