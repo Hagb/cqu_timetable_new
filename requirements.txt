@@ -2,3 +2,5 @@ icalendar
 pandas
 numpy
 pytz
+xlrd
+openpyxl
