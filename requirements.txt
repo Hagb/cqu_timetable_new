@@ -4,3 +4,4 @@ numpy
 pytz
 xlrd
 openpyxl
+configparser

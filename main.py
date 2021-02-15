@@ -1,10 +1,18 @@
-import pandas as pd
+import configparser
+import datetime
+import os
+import re
+import uuid
 import numpy as np
-from icalendar import Calendar, Event, Alarm, Timezone, vDDDTypes
-import re, uuid, datetime, pytz, os
+import pandas as pd
+from icalendar import Calendar, Event, Timezone, vDDDTypes
 
-base_dir = '/home/ddqi/kb.xlsx'
-start_date = '20210301'
+
+config = configparser.RawConfigParser()
+config.read_file(open('config.txt'))
+base_dir = config.get('config', 'base_dir')
+start_date = config.get('config', 'start_date')
+file_name = config.get('config', 'file_name')
 
 VTIMEZONE = Timezone.from_ical("""BEGIN:VTIMEZONE
 TZID:Asia/Shanghai
@@ -21,6 +29,7 @@ TIMEZONE = VTIMEZONE.to_tz()
 year = start_date[0:4]
 month = start_date[4:6]
 day = start_date[6:]
+print(base_dir)
 dt = datetime.datetime(int(year), int(month), int(day), tzinfo=TIMEZONE)
 time_dict = {
     1: [(8, 30), (9, 15)],
@@ -114,7 +123,7 @@ def mkcal(data, cal):
     start_week, end_week, week_day, all_week, start_class, end_class = get_schedule(data)
     event = Event()
     event.add('SUMMARY', data[0])
-    if data[4] is not "NaN":
+    if data[4] != "NaN":
         event.add('LOCATION', data[3])
     event.add('DESCRIPTION', "教师:" + data[4] + "\n教学班号:" + data[1])
 
@@ -166,14 +175,18 @@ def main():
         else:
             get_schedule(items)
     tmp_data = np.array(tmp)
+
+    if os.path.exists(file_name):
+        os.remove(file_name)
+
     if tmp_data.size == 0:
-        f = open('timetable.ics', 'wb')
+        f = open(file_name, 'wb')
         f.write(cal.to_ical())
         f.close()
     else:
         for alter in tmp_data:
             mkcal(alter, cal)
-        f = open('timetable.ics', 'wb')
+        f = open(file_name, 'wb')
         f.write(cal.to_ical())
         f.close()
 
