@@ -18,8 +18,13 @@ file_name = timetable.ics
 |:-|:--|:--|
 |base_dir|/home/ddqi/kb.xlsx|指向课表文件的绝对路径|
 |start_date|20210301|行课日期|
-|file_name|timetable.ics|生成的 ics 文件名（为避免编码问题不要用中文）|
+|file_name|timetable.ics|生成的 ics 文件名（为避免编码问题不要用中文），扩展名请勿更改|
 
+将配置文件 `config.txt` 与 `main.py` 或预编译二进制文件放置于同目录下，终端执行：
+```bash
+python main.py
+```
+将在同目录下生成指定文件名的 iCalendar 格式文件
 
 
 ## FAQ
