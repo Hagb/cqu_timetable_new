@@ -3,6 +3,9 @@ import numpy as np
 from icalendar import Calendar, Event, Alarm, Timezone, vDDDTypes
 import re, uuid, datetime, pytz, os
 
+base_dir = '/home/ddqi/kb.xlsx'
+start_date = '20210301'
+
 VTIMEZONE = Timezone.from_ical("""BEGIN:VTIMEZONE
 TZID:Asia/Shanghai
 X-LIC-LOCATION:Asia/Shanghai
@@ -14,12 +17,11 @@ DTSTART:19700101T000000
 END:STANDARD
 END:VTIMEZONE""")
 TIMEZONE = VTIMEZONE.to_tz()
-base_dir = '/home/ddqi/kb.xlsx'
-start_date = '20210301'
-year = '2021'
-month = '03'
-day = '01'
-dt = datetime.datetime(int(year),int(month),int(day),tzinfo=TIMEZONE)
+
+year = start_date[0:4]
+month = start_date[4:6]
+day = start_date[6:]
+dt = datetime.datetime(int(year), int(month), int(day), tzinfo=TIMEZONE)
 time_dict = {
     1: [(8, 30), (9, 15)],
     2: [(9, 25), (10, 10)],
@@ -82,7 +84,7 @@ def get_schedule(data):  # 返回值说明： 开始周次，结束周次，星�
                 start_class = schedule.split("-")[0]
                 end_class = schedule.split("-")[1]
                 return start_week, end_week, week_day, False, start_class, end_class
-    else:# 当带有分割的周次时候不返回任何值
+    else:  # 当带有分割的周次时候不返回任何值
         if "星期" not in data[2]:
             all_date = list(data[2])
             del all_date[-1]
@@ -95,6 +97,7 @@ def get_schedule(data):  # 返回值说明： 开始周次，结束周次，星�
             for items in all_week:
                 tmp.append([data[0], data[1], items + "周星期" + date[1], data[3], data[4]])
 
+
 def add_datetime(component, name, time):
     """一个跳过带时区的时间中 VALUE 属性的 workaround
 
@@ -106,11 +109,12 @@ def add_datetime(component, name, time):
         vdatetime.params.pop('VALUE')
     component.add(name, vdatetime)
 
+
 def mkcal(data, cal):
     start_week, end_week, week_day, all_week, start_class, end_class = get_schedule(data)
     event = Event()
     event.add('SUMMARY', data[0])
-    if data[4] is not None:
+    if data[4] is not "NaN":
         event.add('LOCATION', data[3])
     event.add('DESCRIPTION', "教师:" + data[4] + "\n教学班号:" + data[1])
 
@@ -118,11 +122,13 @@ def mkcal(data, cal):
         count = int(end_week) - int(start_week) + 1
         event.add("RRULE", {"freq": "weekly", "count": count})
         class_start_date = dt + datetime.timedelta(weeks=int(start_week) - 1, days=week_dic[week_day] - 1)
-        class_start_time = datetime.timedelta(hours=time_dict[int(start_class)][0][0], minutes=time_dict[int(start_class)][0][1])
-        class_end_time = datetime.timedelta(hours=time_dict[int(end_class)][1][0], minutes=time_dict[int(end_class)][1][1])
+        class_start_time = datetime.timedelta(hours=time_dict[int(start_class)][0][0],
+                                              minutes=time_dict[int(start_class)][0][1])
+        class_end_time = datetime.timedelta(hours=time_dict[int(end_class)][1][0],
+                                            minutes=time_dict[int(end_class)][1][1])
     else:
-        class_start_time = datetime.timedelta(hours=8,minutes=30)
-        class_end_time = datetime.timedelta(hours=21,minutes=35)
+        class_start_time = datetime.timedelta(hours=8, minutes=30)
+        class_end_time = datetime.timedelta(hours=21, minutes=35)
         class_start_date = dt + datetime.timedelta(weeks=int(start_week) - 1)
         count = (int(end_week) - int(start_week) + 1) * 7
         event.add("RRULE", {"freq": "daily", "count": count})
@@ -131,7 +137,7 @@ def mkcal(data, cal):
     dtend = class_start_date + class_end_time
     namespace = uuid.UUID(
         bytes=int(dtstart.timestamp()).to_bytes(length=8, byteorder='big') +
-        int(dtend.timestamp()).to_bytes(length=8, byteorder='big')
+              int(dtend.timestamp()).to_bytes(length=8, byteorder='big')
     )
 
     add_datetime(event, 'DTEND', dtend)
