@@ -31,6 +31,7 @@ python main.py
 Q: 为什么不带有登录功能？</br>
 A： 因为我懒。如果你能做出带有登录功能的脚本请随意 pr 。我只信得过可以下载的自动生成的课表。
 （主要还是依赖项少一些）
-
+## 姊妹项目
+[cm-http-api](https://github.com/weearc/cm-http-api) （开发中）
 ## LICENSES
 AGPLv3
