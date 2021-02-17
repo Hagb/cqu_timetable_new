@@ -85,10 +85,10 @@ def loads_from_json(data):
     timetable = json.loads(data)["data"]
     return [(cour["courseName"],
              cour["classNbr"],
-             (cour["teachingWeekFormat"], cour["weekDayFormat"],
-              cour["wholeWeekOccupy"], cour["periodFormat"]),
+             (cour["teachingWeekFormat"],
+              cour["weekDayFormat"], cour["periodFormat"]),
              cour["roomName"],
-             cour["classTimetableInstrVOList"][0]["instructorName"])
+             ','.join(i["instructorName"] for i in cour["classTimetableInstrVOList"]))
             for cour in timetable]
 
 
@@ -112,7 +112,7 @@ def split_range(string):
 def get_schedule(data):  # 返回值说明： ([开始周次，结束周次], ...)，星期几，是否整周，开始节数，结束节数
     if isinstance(data[2], (list, tuple)):  # 如果数据来自 json
         week_str = data[2][0]
-        day_str = '' if data[2][2] else '星期' + data[2][1] + data[2][3] + '节'
+        day_str = '星期' + data[2][1] + data[2][2] + '节' if data[2][1] else ''
     else:  # 如果数据来自 xlsx
         week_str, day_str = data[2].split('周')  # 分隔周数和星期+节数
     weeks = (split_range(week_range)
