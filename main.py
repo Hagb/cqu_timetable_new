@@ -7,7 +7,8 @@ from openpyxl import load_workbook
 from icalendar import Calendar, Event, Timezone, vDDDTypes
 
 
-__all__ = ('mkevent', 'mkical', 'read_data')
+__all__ = ('mkical', 'loads_from_xlsx', 'load_from_xlsx',
+           'loads_from_json', 'load_from_json')
 
 VTIMEZONE = Timezone.from_ical("""BEGIN:VTIMEZONE
 TZID:Asia/Shanghai
@@ -48,15 +49,39 @@ week_dic = {
 
 
 def loads_from_xlsx(data):
+    """从 xlsx 中加载课表数据
+
+    Args:
+        data (bytes): xlsx 文件数据
+
+    Returns:
+        list[tuple]: 课表数据
+    """
     return load_from_xlsx(BytesIO(data))
 
 
 def load_from_xlsx(file):
+    """从 xlsx 中加载课表数据
+
+    Args:
+        file (str or stream): xlsx 文件的文件名或数据流
+
+    Returns:
+        list[tuple]: 课表数据
+    """
     ws = load_workbook(file, read_only=True, data_only=True).worksheets[0]
     return list(ws.values)[2:]
 
 
 def loads_from_json(data):
+    """从 json 中加载课表数据
+
+    Args:
+        data (str or bytes): json 文件数据
+
+    Returns:
+        list[tuple]: 课表数据
+    """
     timetable = json.loads(data)["data"]
     return [(cour["courseName"],
              cour["classNbr"],
@@ -68,6 +93,14 @@ def loads_from_json(data):
 
 
 def load_from_json(file):
+    """从 json 中加载课表数据
+
+    Args:
+        file (str or stream): json 文件的文件名或数据流
+
+    Returns:
+        list[tuple]: 课表数据
+    """
     return loads_from_json((open(file) if isinstance(file, str) else file).read())
 
 
@@ -148,6 +181,15 @@ def mkevent(data, cal, dt):
 
 
 def mkical(data, start_date):
+    """生成日历
+
+    Args:
+        data (list[tuple]): 课表数据
+        start_date (datetime.date): 开学日期
+
+    Returns:
+        icalendar.Calendar: 生成的日历，可通过 `to_ical` 方法导出
+    """
     cal = Calendar()
     cal.add('prodid', '-//CQU//CQU Calendar//')
     cal.add('version', '2.0')
