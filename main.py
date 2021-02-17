@@ -1,6 +1,8 @@
 import configparser
 import datetime
 import uuid
+import json
+from io import BytesIO
 from openpyxl import load_workbook
 from icalendar import Calendar, Event, Timezone, vDDDTypes
 
@@ -45,9 +47,28 @@ week_dic = {
 }
 
 
-def read_data(base_dir):
-    ws = load_workbook(base_dir, read_only=True, data_only=True).worksheets[0]
-    return tuple(ws.values)[2:]
+def loads_from_xlsx(data):
+    return load_from_xlsx(BytesIO(data))
+
+
+def load_from_xlsx(file):
+    ws = load_workbook(file, read_only=True, data_only=True).worksheets[0]
+    return list(ws.values)[2:]
+
+
+def loads_from_json(data):
+    timetable = json.loads(data)["data"]
+    return [(cour["courseName"],
+             cour["classNbr"],
+             (cour["teachingWeekFormat"], cour["weekDayFormat"],
+              cour["wholeWeekOccupy"], cour["periodFormat"]),
+             cour["roomName"],
+             cour["classTimetableInstrVOList"][0]["instructorName"])
+            for cour in timetable]
+
+
+def load_from_json(file):
+    return loads_from_json((open(file) if isinstance(file, str) else file).read())
 
 
 def split_range(string):
@@ -56,7 +77,11 @@ def split_range(string):
 
 
 def get_schedule(data):  # 返回值说明： ([开始周次，结束周次], ...)，星期几，是否整周，开始节数，结束节数
-    week_str, day_str = data[2].split('周')  # 分隔周数和星期+节数
+    if isinstance(data[2], (list, tuple)):  # 如果数据来自 json
+        week_str = data[2][0]
+        day_str = '' if data[2][2] else '星期' + data[2][1] + data[2][3] + '节'
+    else:  # 如果数据来自 xlsx
+        week_str, day_str = data[2].split('周')  # 分隔周数和星期+节数
     weeks = (split_range(week_range)
              for week_range in week_str.split(','))  # 解析周数
     if day_str:  # 非整周 day_str 为 "星期Xxx-xx节"
@@ -122,11 +147,13 @@ def mkevent(data, cal, dt):
         cal.add_component(event)
 
 
-def mkical(data, dt):
+def mkical(data, start_date):
     cal = Calendar()
     cal.add('prodid', '-//CQU//CQU Calendar//')
     cal.add('version', '2.0')
     cal.add_component(VTIMEZONE)
+    dt = datetime.datetime.combine(
+        start_date, datetime.time(), tzinfo=TIMEZONE)
     for items in data:
         mkevent(items, cal, dt)
     return cal
@@ -141,8 +168,9 @@ def main():
     year = start_date[0:4]
     month = start_date[4:6]
     day = start_date[6:]
-    dt = datetime.datetime(int(year), int(month), int(day), tzinfo=TIMEZONE)
-    data = read_data(base_dir)
+    dt = datetime.date(int(year), int(month), int(day))
+    data = (load_from_xlsx
+            if base_dir[-5:].lower() == ".xlsx" else load_from_json)(base_dir)
 
     cal = mkical(data, dt)
 
