@@ -1,16 +1,14 @@
 import configparser
 import datetime
-import re
 import uuid
+import json
+from io import BytesIO
 from openpyxl import load_workbook
 from icalendar import Calendar, Event, Timezone, vDDDTypes
 
 
-config = configparser.RawConfigParser()
-config.read_file(open('config.txt'))
-base_dir = config.get('config', 'base_dir')
-start_date = config.get('config', 'start_date')
-file_name = config.get('config', 'file_name')
+__all__ = ('mkical', 'loads_from_xlsx', 'load_from_xlsx',
+           'loads_from_json', 'load_from_json')
 
 VTIMEZONE = Timezone.from_ical("""BEGIN:VTIMEZONE
 TZID:Asia/Shanghai
@@ -23,12 +21,6 @@ DTSTART:19700101T000000
 END:STANDARD
 END:VTIMEZONE""")
 TIMEZONE = VTIMEZONE.to_tz()
-
-year = start_date[0:4]
-month = start_date[4:6]
-day = start_date[6:]
-print(base_dir)
-dt = datetime.datetime(int(year), int(month), int(day), tzinfo=TIMEZONE)
 time_dict = {
     1: [(8, 30), (9, 15)],
     2: [(9, 25), (10, 10)],
@@ -54,54 +46,81 @@ week_dic = {
     "日": 7,
     "全": 0,
 }
-tmp = []
 
 
-def read_data(base_dir):
-    ws = load_workbook(base_dir, read_only=True, data_only=True).worksheets[0]
-    return tuple(ws.values)[2:]
+def loads_from_xlsx(data):
+    """从 xlsx 中加载课表数据
+
+    Args:
+        data (bytes): xlsx 文件数据
+
+    Returns:
+        list[tuple]: 课表数据
+    """
+    return load_from_xlsx(BytesIO(data))
 
 
-def get_schedule(data):  # 返回值说明： 开始周次，结束周次，星期几，是否整周，开始节数，结束节数
-    if if_separate_time(data) is not True:
-        if "星期" not in data[2]:
-            all_date = list(data[2])
-            del all_date[-1]
-            if "-" in all_date:  # 生产实习或者实验什么的课设啥的没具体排课的
-                date_during = "".join(all_date).split("-")
-                return date_during[0], date_during[1], "全", True, "1", "12"
-            else:  # 万一就一周呢...
-                date_during = "".join(all_date)
-                return date_during, date_during, "全", True, "1", "12"
-        else:  # 其他具体排课了的
-            date = re.split("周星期", data[2])
-            week_day = date[1][0]
-            if "-" in date[0]:
-                start_week = date[0].split("-")[0]
-                end_week = date[0].split("-")[1]
-                schedule = date[1][1:-1]
-                start_class = schedule.split("-")[0]
-                end_class = schedule.split("-")[1]
-                return start_week, end_week, week_day, False, start_class, end_class
-            else:
-                start_week = date[0]
-                end_week = start_week
-                schedule = date[1][1:-1]
-                start_class = schedule.split("-")[0]
-                end_class = schedule.split("-")[1]
-                return start_week, end_week, week_day, False, start_class, end_class
-    else:  # 当带有分割的周次时候不返回任何值
-        if "星期" not in data[2]:
-            all_date = list(data[2])
-            del all_date[-1]
-            week_slice = "".join(all_date).split(",")
-            for items in week_slice:
-                tmp.append([data[0], data[1], items + "周", data[3], data[4]])
-        else:
-            date = re.split("周星期", data[2])
-            all_week = date[0].split(",")
-            for items in all_week:
-                tmp.append([data[0], data[1], items + "周星期" + date[1], data[3], data[4]])
+def load_from_xlsx(file):
+    """从 xlsx 中加载课表数据
+
+    Args:
+        file (str or stream): xlsx 文件的文件名或数据流
+
+    Returns:
+        list[tuple]: 课表数据
+    """
+    ws = load_workbook(file, read_only=True, data_only=True).worksheets[0]
+    return list(ws.values)[2:]
+
+
+def loads_from_json(data):
+    """从 json 中加载课表数据
+
+    Args:
+        data (str or bytes): json 文件数据
+
+    Returns:
+        list[tuple]: 课表数据
+    """
+    timetable = json.loads(data)["data"]
+    return [(cour["courseName"],
+             cour["classNbr"],
+             (cour["teachingWeekFormat"], cour["weekDayFormat"],
+              cour["wholeWeekOccupy"], cour["periodFormat"]),
+             cour["roomName"],
+             cour["classTimetableInstrVOList"][0]["instructorName"])
+            for cour in timetable]
+
+
+def load_from_json(file):
+    """从 json 中加载课表数据
+
+    Args:
+        file (str or stream): json 文件的文件名或数据流
+
+    Returns:
+        list[tuple]: 课表数据
+    """
+    return loads_from_json((open(file) if isinstance(file, str) else file).read())
+
+
+def split_range(string):
+    range = string.split('-')
+    return range if len(range) == 2 else range * 2
+
+
+def get_schedule(data):  # 返回值说明： ([开始周次，结束周次], ...)，星期几，是否整周，开始节数，结束节数
+    if isinstance(data[2], (list, tuple)):  # 如果数据来自 json
+        week_str = data[2][0]
+        day_str = '' if data[2][2] else '星期' + data[2][1] + data[2][3] + '节'
+    else:  # 如果数据来自 xlsx
+        week_str, day_str = data[2].split('周')  # 分隔周数和星期+节数
+    weeks = (split_range(week_range)
+             for week_range in week_str.split(','))  # 解析周数
+    if day_str:  # 非整周 day_str 为 "星期Xxx-xx节"
+        return weeks, day_str[2], False, * split_range(day_str[3:-1])
+    else:  # 整周 day_str 为空
+        return weeks, '全', True, "1", "12"
 
 
 def add_datetime(component, name, time):
@@ -116,66 +135,87 @@ def add_datetime(component, name, time):
     component.add(name, vdatetime)
 
 
-def mkcal(data, cal):
-    start_week, end_week, week_day, all_week, start_class, end_class = get_schedule(data)
-    event = Event()
-    event.add('SUMMARY', data[0])
+def mkevent(data, cal, dt):
+    weeks, week_day, all_week, start_class, end_class = get_schedule(data)
+    event_class = Event()
+    event_class.add('SUMMARY', data[0])
     if data[3] is not None:
-        event.add('LOCATION', data[3])
+        event_class.add('LOCATION', data[3])
     if data[4] is not None:
-        event.add('DESCRIPTION', "教师:" + data[4] + "\n教学班号:" + data[1])
+        event_class.add('DESCRIPTION', "教师:" + data[4] + "\n教学班号:" + data[1])
     else:
-        event.add('DESCRIPTION', "教学班号:" + data[1])
-    if all_week is False:
-        count = int(end_week) - int(start_week) + 1
-        event.add("RRULE", {"freq": "weekly", "count": count})
-        class_start_date = dt + datetime.timedelta(weeks=int(start_week) - 1, days=week_dic[week_day] - 1)
-        class_start_time = datetime.timedelta(hours=time_dict[int(start_class)][0][0],
-                                              minutes=time_dict[int(start_class)][0][1])
-        class_end_time = datetime.timedelta(hours=time_dict[int(end_class)][1][0],
-                                            minutes=time_dict[int(end_class)][1][1])
-    else:
-        class_start_time = datetime.timedelta(hours=8, minutes=30)
-        class_end_time = datetime.timedelta(hours=21, minutes=35)
-        class_start_date = dt + datetime.timedelta(weeks=int(start_week) - 1)
-        count = (int(end_week) - int(start_week) + 1) * 7
-        event.add("RRULE", {"freq": "daily", "count": count})
+        event_class.add('DESCRIPTION', "教学班号:" + data[1])
+    for start_week, end_week in weeks:
+        event = event_class.copy()
+        if all_week is False:
+            count = int(end_week) - int(start_week) + 1
+            event.add("RRULE", {"freq": "weekly", "count": count})
+            class_start_date = dt + \
+                datetime.timedelta(weeks=int(start_week) - 1,
+                                   days=week_dic[week_day] - 1)
+            class_start_time = datetime.timedelta(hours=time_dict[int(start_class)][0][0],
+                                                  minutes=time_dict[int(start_class)][0][1])
+            class_end_time = datetime.timedelta(hours=time_dict[int(end_class)][1][0],
+                                                minutes=time_dict[int(end_class)][1][1])
+        else:
+            class_start_time = datetime.timedelta(hours=8, minutes=30)
+            class_end_time = datetime.timedelta(hours=21, minutes=35)
+            class_start_date = dt + \
+                datetime.timedelta(weeks=int(start_week) - 1)
+            count = (int(end_week) - int(start_week) + 1) * 7
+            event.add("RRULE", {"freq": "daily", "count": count})
 
-    dtstart = class_start_date + class_start_time
-    dtend = class_start_date + class_end_time
-    namespace = uuid.UUID(
-        bytes=int(dtstart.timestamp()).to_bytes(length=8, byteorder='big') +
-              int(dtend.timestamp()).to_bytes(length=8, byteorder='big')
-    )
+        dtstart = class_start_date + class_start_time
+        dtend = class_start_date + class_end_time
+        namespace = uuid.UUID(
+            bytes=int(dtstart.timestamp()).to_bytes(length=8, byteorder='big') +
+            int(dtend.timestamp()).to_bytes(length=8, byteorder='big')
+        )
 
-    add_datetime(event, 'DTEND', dtend)
-    add_datetime(event, 'DTSTART', dtstart)
-    event.add('UID', uuid.uuid3(namespace, data[0] + "-" + data[1]))
+        add_datetime(event, 'DTEND', dtend)
+        add_datetime(event, 'DTSTART', dtstart)
+        event.add('UID', uuid.uuid3(namespace, data[0] + "-" + data[1]))
 
-    event.add('DTSTAMP', datetime.datetime.now())
-    cal.add_component(event)
-
-
-def if_separate_time(data):
-    if "," in data[2]:
-        return True
+        event.add('DTSTAMP', datetime.datetime.now())
+        cal.add_component(event)
 
 
-def main():
-    data = read_data(base_dir)
+def mkical(data, start_date):
+    """生成日历
 
+    Args:
+        data (list[tuple]): 课表数据
+        start_date (datetime.date): 开学日期
+
+    Returns:
+        icalendar.Calendar: 生成的日历，可通过 `to_ical` 方法导出
+    """
     cal = Calendar()
     cal.add('prodid', '-//CQU//CQU Calendar//')
     cal.add('version', '2.0')
     cal.add_component(VTIMEZONE)
+    dt = datetime.datetime.combine(
+        start_date, datetime.time(), tzinfo=TIMEZONE)
     for items in data:
-        if if_separate_time(items) is not True:
-            mkcal(items, cal)
-        else:
-            get_schedule(items)
+        mkevent(items, cal, dt)
+    return cal
 
-    for alter in tmp:
-        mkcal(alter, cal)
+
+def main():
+    config = configparser.RawConfigParser()
+    config.read_file(open('config.txt'))
+    base_dir = config.get('config', 'base_dir')
+    start_date = config.get('config', 'start_date')
+    file_name = config.get('config', 'file_name')
+    year = start_date[0:4]
+    month = start_date[4:6]
+    day = start_date[6:]
+    dt = datetime.date(int(year), int(month), int(day))
+    data = (load_from_xlsx
+            if base_dir[-5:].lower() == ".xlsx" else load_from_json)(base_dir)
+
+    cal = mkical(data, dt)
+
     f = open(file_name, 'wb')
     f.write(cal.to_ical())
     f.close()

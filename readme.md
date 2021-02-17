@@ -5,7 +5,9 @@
 ```bash
 pip install -r requirements.txt --user
 ```
-准备从新选课网站下载的 `课表.xlsx` 文件，放置于任意目录。</br>
+
+### 直接运行
+准备从新选课网站下载的 `课表.xlsx` 或者 json 文件，放置于任意目录。</br>
 配置文件格式如下:
 ```editorconfig
 [config]
@@ -26,6 +28,18 @@ python main.py
 ```
 将在同目录下生成指定文件名的 iCalendar 格式文件
 
+### 作为库来使用
+
+使用时需要先生成课表数据，再从课表数据中生成日历
+
+1. 生成课表数据
+    - 可通过 `load_from_json` 或 `load_from_xlsx` 函数从文件或数据流中读取 json 或 xlsx，返回解析出的课表数据
+    - 也可通过 `loads_from_json` 或 `loads_from_xlsx` 函数读取 `str` 或 `bytes` 格式的 json 或 xlsx 数据，返回解析出的课表数据
+2. 生成日历数据
+
+    使用 `mkical` 函数，第一个参数是上一步得到的课表数据，第二个参数是 `datetime.date` 类型的开学日期，返回 `icalendar.Calendar` 类型的日历数据，可通过其 `to_ical` 得到 ics 文件的内容。
+
+demo 可见于 [main.py](main.py) 中的 `main` 函数
 
 ## FAQ
 Q: 为什么不带有登录功能？</br>
