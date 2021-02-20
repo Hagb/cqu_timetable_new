@@ -138,48 +138,51 @@ def add_datetime(component, name, time):
 
 
 def mkevent(data, cal, dt, isDebug):
-    weeks, week_day, all_week, start_class, end_class = get_schedule(data, isDebug)
-    event_class = Event()
-    event_class.add('SUMMARY', data[0])
-    if data[3] is not None:
-        event_class.add('LOCATION', data[3])
-    if data[4] is not None:
-        event_class.add('DESCRIPTION', "教师:" + data[4] + "\n教学班号:" + data[1])
-    else:
-        event_class.add('DESCRIPTION', "教学班号:" + data[1])
-    for start_week, end_week in weeks:
-        event = event_class.copy()
-        if all_week is False:
-            count = int(end_week) - int(start_week) + 1
-            event.add("RRULE", {"freq": "weekly", "count": count})
-            class_start_date = dt + \
-                datetime.timedelta(weeks=int(start_week) - 1,
-                                   days=week_dic[week_day] - 1)
-            class_start_time = datetime.timedelta(hours=time_dict[int(start_class)][0][0],
-                                                  minutes=time_dict[int(start_class)][0][1])
-            class_end_time = datetime.timedelta(hours=time_dict[int(end_class)][1][0],
-                                                minutes=time_dict[int(end_class)][1][1])
+    if len(set(data)) != 1:
+        weeks, week_day, all_week, start_class, end_class = get_schedule(data, isDebug)
+        event_class = Event()
+        event_class.add('SUMMARY', data[0])
+        if data[3] is not None:
+            event_class.add('LOCATION', data[3])
+        if data[4] is not None:
+            event_class.add('DESCRIPTION', "教师:" + data[4] + "\n教学班号:" + data[1])
         else:
-            class_start_time = datetime.timedelta(hours=8, minutes=30)
-            class_end_time = datetime.timedelta(hours=21, minutes=35)
-            class_start_date = dt + \
-                datetime.timedelta(weeks=int(start_week) - 1)
-            count = (int(end_week) - int(start_week) + 1) * 7
-            event.add("RRULE", {"freq": "daily", "count": count})
+            event_class.add('DESCRIPTION', "教学班号:" + data[1])
+        for start_week, end_week in weeks:
+            event = event_class.copy()
+            if all_week is False:
+                count = int(end_week) - int(start_week) + 1
+                event.add("RRULE", {"freq": "weekly", "count": count})
+                class_start_date = dt + \
+                    datetime.timedelta(weeks=int(start_week) - 1,
+                                       days=week_dic[week_day] - 1)
+                class_start_time = datetime.timedelta(hours=time_dict[int(start_class)][0][0],
+                                                      minutes=time_dict[int(start_class)][0][1])
+                class_end_time = datetime.timedelta(hours=time_dict[int(end_class)][1][0],
+                                                    minutes=time_dict[int(end_class)][1][1])
+            else:
+                class_start_time = datetime.timedelta(hours=8, minutes=30)
+                class_end_time = datetime.timedelta(hours=21, minutes=35)
+                class_start_date = dt + \
+                    datetime.timedelta(weeks=int(start_week) - 1)
+                count = (int(end_week) - int(start_week) + 1) * 7
+                event.add("RRULE", {"freq": "daily", "count": count})
 
-        dtstart = class_start_date + class_start_time
-        dtend = class_start_date + class_end_time
-        namespace = uuid.UUID(
-            bytes=int(dtstart.timestamp()).to_bytes(length=8, byteorder='big') +
-            int(dtend.timestamp()).to_bytes(length=8, byteorder='big')
-        )
+            dtstart = class_start_date + class_start_time
+            dtend = class_start_date + class_end_time
+            namespace = uuid.UUID(
+                bytes=int(dtstart.timestamp()).to_bytes(length=8, byteorder='big') +
+                int(dtend.timestamp()).to_bytes(length=8, byteorder='big')
+            )
 
-        add_datetime(event, 'DTEND', dtend)
-        add_datetime(event, 'DTSTART', dtstart)
-        event.add('UID', uuid.uuid3(namespace, data[0] + "-" + data[1]))
+            add_datetime(event, 'DTEND', dtend)
+            add_datetime(event, 'DTSTART', dtstart)
+            event.add('UID', uuid.uuid3(namespace, data[0] + "-" + data[1]))
 
-        event.add('DTSTAMP', datetime.datetime.now())
-        cal.add_component(event)
+            event.add('DTSTAMP', datetime.datetime.now())
+            cal.add_component(event)
+    else:
+        pass
 
 
 def mkical(data, start_date, isDebug):
@@ -208,7 +211,7 @@ def mkical(data, start_date, isDebug):
 def main():
     config = configparser.RawConfigParser()
     config.read_file(open('config.txt'))
-    isDebug = config.get('config', 'debug')
+    isDebug = config.getboolean('config', 'debug')
     base_dir = config.get('config', 'base_dir')
     start_date = config.get('config', 'start_date')
     file_name = config.get('config', 'file_name')
@@ -218,7 +221,6 @@ def main():
     dt = datetime.date(int(year), int(month), int(day))
     data = (load_from_xlsx
             if base_dir[-5:].lower() == ".xlsx" else load_from_json)(base_dir)
-
     cal = mkical(data, dt, isDebug)
     if isDebug is False:
         f = open(file_name, 'wb')
