@@ -109,7 +109,9 @@ def split_range(string):
     return range if len(range) == 2 else range * 2
 
 
-def get_schedule(data):  # 返回值说明： ([开始周次，结束周次], ...)，星期几，是否整周，开始节数，结束节数
+def get_schedule(data, isDebug):  # 返回值说明： ([开始周次，结束周次], ...)，星期几，是否整周，开始节数，结束节数
+    if isDebug:
+        print(data)
     if isinstance(data[2], (list, tuple)):  # 如果数据来自 json
         week_str = data[2][0]
         day_str = '星期' + data[2][1] + data[2][2] + '节' if data[2][1] else ''
@@ -135,8 +137,8 @@ def add_datetime(component, name, time):
     component.add(name, vdatetime)
 
 
-def mkevent(data, cal, dt):
-    weeks, week_day, all_week, start_class, end_class = get_schedule(data)
+def mkevent(data, cal, dt, isDebug):
+    weeks, week_day, all_week, start_class, end_class = get_schedule(data, isDebug)
     event_class = Event()
     event_class.add('SUMMARY', data[0])
     if data[3] is not None:
@@ -180,7 +182,7 @@ def mkevent(data, cal, dt):
         cal.add_component(event)
 
 
-def mkical(data, start_date):
+def mkical(data, start_date, isDebug):
     """生成日历
 
     Args:
@@ -199,13 +201,14 @@ def mkical(data, start_date):
     dt = datetime.datetime.combine(
         start_date, datetime.time(), tzinfo=TIMEZONE)
     for items in data:
-        mkevent(items, cal, dt)
+        mkevent(items, cal, dt, isDebug)
     return cal
 
 
 def main():
     config = configparser.RawConfigParser()
     config.read_file(open('config.txt'))
+    isDebug = config.get('config', 'debug')
     base_dir = config.get('config', 'base_dir')
     start_date = config.get('config', 'start_date')
     file_name = config.get('config', 'file_name')
@@ -216,11 +219,11 @@ def main():
     data = (load_from_xlsx
             if base_dir[-5:].lower() == ".xlsx" else load_from_json)(base_dir)
 
-    cal = mkical(data, dt)
-
-    f = open(file_name, 'wb')
-    f.write(cal.to_ical())
-    f.close()
+    cal = mkical(data, dt, isDebug)
+    if isDebug is False:
+        f = open(file_name, 'wb')
+        f.write(cal.to_ical())
+        f.close()
 
 
 if __name__ == "__main__":
