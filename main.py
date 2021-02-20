@@ -185,11 +185,13 @@ def mkical(data, start_date):
 
     Args:
         data (list[tuple]): 课表数据
-        start_date (datetime.date): 开学日期
+        start_date (datetime.date): 开学日期，必须是星期一
 
     Returns:
         icalendar.Calendar: 生成的日历，可通过 `to_ical` 方法导出
     """
+    if start_date.weekday() != 0:
+        raise ValueError("start_date must be Monday of a week")
     cal = Calendar()
     cal.add('prodid', '-//CQU//CQU Calendar//')
     cal.add('version', '2.0')
