@@ -48,7 +48,7 @@ week_dic = {
 }
 
 
-def loads_from_xlsx(data):
+def loadIO_from_xlsx(data):
     """从 xlsx 中加载课表数据
 
     Args:
@@ -73,7 +73,7 @@ def load_from_xlsx(file):
     return list(ws.values)[2:]
 
 
-def loads_from_json(data):
+def loadIO_from_json(data):
     """从 json 中加载课表数据
 
     Args:
@@ -101,7 +101,7 @@ def load_from_json(file):
     Returns:
         list[tuple]: 课表数据
     """
-    return loads_from_json((open(file) if isinstance(file, str) else file).read())
+    return loadIO_from_json((open(file) if isinstance(file, str) else file).read())
 
 
 def split_range(string):
