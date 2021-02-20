@@ -7,8 +7,8 @@ from openpyxl import load_workbook
 from icalendar import Calendar, Event, Timezone, vDDDTypes
 
 
-__all__ = ('mkical', 'loads_from_xlsx', 'load_from_xlsx',
-           'loads_from_json', 'load_from_json')
+__all__ = ('mkical', 'loadIO_from_xlsx', 'load_from_xlsx',
+           'loadIO_from_json', 'load_from_json')
 
 VTIMEZONE = Timezone.from_ical("""BEGIN:VTIMEZONE
 TZID:Asia/Shanghai
