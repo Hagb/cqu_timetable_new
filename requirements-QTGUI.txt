@@ -1,3 +1,4 @@
 icalendar
 openpyxl
 configparser
+pyside2
