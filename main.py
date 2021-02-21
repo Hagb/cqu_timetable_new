@@ -105,11 +105,15 @@ def load_from_json(file):
 
 
 def split_range(string):
-    range = string.split('-')
-    return range if len(range) == 2 else range * 2
+    result = []
+    for text in string.split(','):
+        range = text.split('-')
+        result.append(range if len(range) == 2 else range * 2)
+    return result
 
 
-def get_schedule(data, isDebug):  # 返回值说明： ([开始周次，结束周次], ...)，星期几，是否整周，开始节数，结束节数
+def get_schedule(data, isDebug=False):
+    # 返回值说明： [[开始周次，结束周次], ...]，星期几，是否整周，[[开始节数，结束节数]...]
     if isDebug:
         print(data)
     if isinstance(data[2], (list, tuple)):  # 如果数据来自 json
@@ -117,12 +121,11 @@ def get_schedule(data, isDebug):  # 返回值说明： ([开始周次，结束�
         day_str = '星期' + data[2][1] + data[2][2] + '节' if data[2][1] else ''
     else:  # 如果数据来自 xlsx
         week_str, day_str = data[2].split('周')  # 分隔周数和星期+节数
-    weeks = (split_range(week_range)
-             for week_range in week_str.split(','))  # 解析周数
+    weeks = split_range(week_str)  # 解析周数
     if day_str:  # 非整周 day_str 为 "星期Xxx-xx节"
-        return weeks, day_str[2], False, * split_range(day_str[3:-1])
+        return weeks, day_str[2], False, split_range(day_str[3:-1])
     else:  # 整周 day_str 为空
-        return weeks, '全', True, "1", "12"
+        return weeks, '全', True, [["1", "12"]]
 
 
 def add_datetime(component, name, time):
@@ -137,17 +140,21 @@ def add_datetime(component, name, time):
     component.add(name, vdatetime)
 
 
-def mkevent(data, cal, dt, isDebug):
-    if len(set(data)) != 1:
-        weeks, week_day, all_week, start_class, end_class = get_schedule(data, isDebug)
-        event_class = Event()
-        event_class.add('SUMMARY', data[0])
-        if data[3] is not None:
-            event_class.add('LOCATION', data[3])
-        if data[4] is not None:
-            event_class.add('DESCRIPTION', "教师:" + data[4] + "\n教学班号:" + data[1])
-        else:
-            event_class.add('DESCRIPTION', "教学班号:" + data[1])
+def mkevent(data, cal, dt, isDebug=False):
+    if not data[0]:
+        assert not (data[1] or data[2] or data[3] or data[4])
+        return
+    weeks, week_day, all_week, classes = get_schedule(
+        data, isDebug)
+    event_class = Event()
+    event_class.add('SUMMARY', data[0])
+    if data[3] is not None:
+        event_class.add('LOCATION', data[3])
+    if data[4] is not None:
+        event_class.add('DESCRIPTION', "教师:" + data[4] + "\n教学班号:" + data[1])
+    else:
+        event_class.add('DESCRIPTION', "教学班号:" + data[1])
+    for start_class, end_class in classes:
         for start_week, end_week in weeks:
             event = event_class.copy()
             if all_week is False:
@@ -181,11 +188,9 @@ def mkevent(data, cal, dt, isDebug):
 
             event.add('DTSTAMP', datetime.datetime.now())
             cal.add_component(event)
-    else:
-        pass
 
 
-def mkical(data, start_date, isDebug):
+def mkical(data, start_date, isDebug=False):
     """生成日历
 
     Args:
