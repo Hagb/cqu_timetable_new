@@ -47,10 +47,22 @@ class timetable_to_ics():
             month = start_date[4:6]
             day = start_date[6:]
             dt = datetime.date(int(year), int(month), int(day))
-            cal = mkical(data, dt, isDebug)
-            f = open(file_path, 'wb')
-            f.write(cal.to_ical())
-            f.close()
+            try:
+                cal = mkical(data, dt, isDebug)
+                f = open("timetable.ics", 'wb')
+                f.write(cal.to_ical())
+                f.close()
+                QMessageBox.information(
+                    self.ui,
+                    "",
+                    "导出完成！\n请关闭本程序并使用手机日历打开导出的 ICS 文件。"
+                )
+            except Exception as e:
+                QMessageBox.warning(
+                    self.ui,
+                    "",
+                    "请检查是否文件存在问题，是否存在中文文件名称以及中文路径。"
+                )
 
 
     def file_select(self):
@@ -62,7 +74,8 @@ class timetable_to_ics():
         QMessageBox.information(
             self.ui,
             "关于",
-            "请从登陆选课网站 http://my.cqu.edu.cn/enroll/ ，点击“查看课表”，再点击“Excel”下载课程表数据。点击下方的“OK”后选择下载下来的文件。"
+            "请从登陆选课网站 http://my.cqu.edu.cn/enroll/ ，点击“查看课表”，再点击“Excel”下载课程表数据。点击下方的“OK”后选择下载下来的文件。\n"
+            "选择文件并填写行课日期，点击 OK 开始生成课表文件。"
         )
 
 if __name__ == '__main__':
