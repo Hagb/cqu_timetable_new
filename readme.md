@@ -3,7 +3,7 @@
 ## 使用说明
 使用 pip 安装依赖：
 ```bash
-pip install -r requirements.txt --user
+pip install .
 ```
 
 ### 直接运行

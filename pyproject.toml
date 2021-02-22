@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "cqu_timetable_new"
+version = "0.1.0"
+description = "Generate CQU timetable iCalendar (ics) file"
+authors = ["weearc <qby19981121@gmail.com>"]
+license = "AGPL-3.0-only"
+readme = "readme.md"
+repository = "https://github.com/weearc/cqu_timetable_new"
+keywords = ["ics", "cqu", "icalendar", "timetable"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+icalendar = "^4.0.7"
+openpyxl = "^3.0.6"
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/weearc/cqu_timetable_new/issues"
+
+[tool.poetry.scripts]
+cqu_timetable_new = "cqu_timetable_new:main"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
