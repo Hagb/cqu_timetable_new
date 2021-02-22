@@ -35,8 +35,8 @@ python main.py
 使用时需要先生成课表数据，再从课表数据中生成日历
 
 1. 生成课表数据
-    - 可通过 `load_from_json` 或 `load_from_xlsx` 函数从文件或数据流中读取 json 或 xlsx，返回解析出的课表数据
-    - 也可通过 `loads_from_json` 或 `loads_from_xlsx` 函数读取 `str` 或 `bytes` 格式的 json 或 xlsx 数据，返回解析出的课表数据
+    - 可通过 `loadIO_from_json` 或 `loadIO_from_xlsx` 函数从文件或数据流中读取 json 或 xlsx，返回解析出的课表数据
+    - 也可通过 `load_from_json` 或 `load_from_xlsx` 函数读取 `str` 或 `bytes` 格式的 json 或 xlsx 数据，返回解析出的课表数据
 2. 生成日历数据
 
     使用 `mkical` 函数，第一个参数是上一步得到的课表数据，第二个参数是 `datetime.date` 类型的开学日期，返回 `icalendar.Calendar` 类型的日历数据，可通过其 `to_ical` 得到 ics 文件的内容。
