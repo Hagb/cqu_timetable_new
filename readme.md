@@ -6,7 +6,7 @@
 pip install .
 ```
 
-### 直接运行
+### 直接运行 (demo)
 准备从新选课网站下载的 `课表.xlsx` 或者 json 文件，放置于任意目录。</br>
 配置文件格式如下:
 ```editorconfig
@@ -20,15 +20,15 @@ file_name = timetable.ics
 |配置项|类型|示例|注释|
 |:-|:--|:--|:--|
 |debug|boolean|True|控制是否为调试模式，可选值：True False|
-|base_dir|str|/home/ddqi/kb.xlsx|指向课表文件的绝对路径|
+|base_dir|str|/home/ddqi/kb.xlsx|指向课表文件的路径|
 |start_date|str|20210301|行课日期|
 |file_name|str|timetable.ics|生成的 ics 文件名（为避免编码问题不要用中文），扩展名请勿更改，文件名不可包含中文|
 
-将配置文件 `config.txt` 与 `main.py` 或预编译二进制文件放置于同目录下，终端执行：
+将配置文件 `config.txt` 放置在工作目录下，终端执行：
 ```bash
-python main.py
+cqu_timetable_new
 ```
-将在同目录下生成指定文件名的 iCalendar 格式文件
+将生成指定文件名的 iCalendar 格式文件
 
 ### 作为库来使用
 
