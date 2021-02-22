@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date
 from cqu_timetable_new import mkical
 data = [['课名1', '教学班号1', '22-23周', '地点1', '教师1'],
         ['课名2', '教学班号2', '1-11周星期一1-2节', '地点2', '教师2']]
