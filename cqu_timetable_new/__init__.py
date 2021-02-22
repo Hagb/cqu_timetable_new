@@ -7,8 +7,8 @@ from openpyxl import load_workbook
 from icalendar import Calendar, Event, Timezone, vDDDTypes
 
 
-__all__ = ('mkical', 'loadIO_from_xlsx', 'load_from_xlsx',
-           'loadIO_from_json', 'load_from_json')
+__all__ = ('mkical', 'load_from_xlsx', 'loadIO_from_xlsx',
+           'load_from_json', 'loadIO_from_json')
 
 VTIMEZONE = Timezone.from_ical("""BEGIN:VTIMEZONE
 TZID:Asia/Shanghai
@@ -48,7 +48,7 @@ week_dic = {
 }
 
 
-def loadIO_from_xlsx(data):
+def load_from_xlsx(data):
     """从 xlsx 中加载课表数据
 
     Args:
@@ -57,10 +57,10 @@ def loadIO_from_xlsx(data):
     Returns:
         list[tuple]: 课表数据
     """
-    return load_from_xlsx(BytesIO(data))
+    return loadIO_from_xlsx(BytesIO(data))
 
 
-def load_from_xlsx(file):
+def loadIO_from_xlsx(file):
     """从 xlsx 中加载课表数据
 
     Args:
@@ -73,7 +73,7 @@ def load_from_xlsx(file):
     return list(ws.values)[2:]
 
 
-def loadIO_from_json(data):
+def load_from_json(data):
     """从 json 中加载课表数据
 
     Args:
@@ -92,7 +92,7 @@ def loadIO_from_json(data):
             for cour in timetable]
 
 
-def load_from_json(file):
+def loadIO_from_json(file):
     """从 json 中加载课表数据
 
     Args:
@@ -101,7 +101,7 @@ def load_from_json(file):
     Returns:
         list[tuple]: 课表数据
     """
-    return loadIO_from_json((open(file) if isinstance(file, str) else file).read())
+    return load_from_json((open(file) if isinstance(file, str) else file).read())
 
 
 def split_range(string):
@@ -224,8 +224,8 @@ def main():
     month = start_date[4:6]
     day = start_date[6:]
     dt = datetime.date(int(year), int(month), int(day))
-    data = (load_from_xlsx
-            if base_dir[-5:].lower() == ".xlsx" else load_from_json)(base_dir)
+    data = (loadIO_from_xlsx
+            if base_dir[-5:].lower() == ".xlsx" else loadIO_from_json)(base_dir)
     cal = mkical(data, dt, isDebug)
     if isDebug is False:
         f = open(file_name, 'wb')
