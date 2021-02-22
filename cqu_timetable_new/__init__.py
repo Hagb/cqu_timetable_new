@@ -3,7 +3,7 @@ import datetime
 import uuid
 import json
 from io import BytesIO
-from openpyxl import loadIO_workbook
+from openpyxl import load_workbook
 from icalendar import Calendar, Event, Timezone, vDDDTypes
 
 
@@ -69,7 +69,7 @@ def loadIO_from_xlsx(file):
     Returns:
         list[tuple]: 课表数据
     """
-    ws = loadIO_workbook(file, read_only=True, data_only=True).worksheets[0]
+    ws = load_workbook(file, read_only=True, data_only=True).worksheets[0]
     return list(ws.values)[2:]
 
 
