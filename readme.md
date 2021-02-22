@@ -30,6 +30,18 @@ cqu_timetable_new
 ```
 将生成指定文件名的 iCalendar 格式文件
 
+### tkinter 前端
+
+使用 pip 安装依赖：
+```bash
+pip install .[tk]
+```
+之后可运行
+```bash
+cqu_timetable_new-tk
+```
+启动 tkinter 前端。
+
 ### 作为库来使用
 
 使用时需要先生成课表数据，再从课表数据中生成日历
