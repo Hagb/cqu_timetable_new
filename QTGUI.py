@@ -1,9 +1,10 @@
 import datetime
 import sys
 
-from PySide2.QtCore import QFile, QStringListModel, QTimer, QModelIndex, QCoreApplication
+from PySide2.QtCore import QFile, QCoreApplication
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QApplication, QFileDialog, QMessageBox
+
 from main import load_from_xlsx, mkical
 
 
@@ -37,10 +38,22 @@ class timetable_to_ics():
         self.ui.BFileSelect.clicked.connect(lambda: self.file_select())
         self.ui.Bhelp.clicked.connect(lambda: self.show_help())
         self.ui.runOnBox.rejected.connect(lambda: QCoreApplication.quit())
-        self.ui.runOnBox.accepted.connect(lambda: self.gen_ical(self.ui.startDate.text(), self.ui.fileSelectText.text()))
+        self.ui.runOnBox.accepted.connect(lambda: self.gen_ical(self.ui.startDate.text(),
+                                                                self.ui.fileSelectText.text(),
+                                                                self.ui.fileSaveText.text()))
+        self.ui.BFileSave.clicked.connect(lambda: self.get_save_path())
 
-    def gen_ical(self, start_date, file_path):
-        if all([start_date, file_path]) is False:
+    def get_save_path(self):
+        file_fileter = "iCalendar(*.ics)"
+        fd = QFileDialog.getSaveFileName(self.ui, "请选择保存位置", "timetable.ics", filter=file_fileter)
+        if fd[0][-4:].lower() != ".ics":
+            save_path = fd[0] + ".ics"
+        else:
+            save_path = fd[0]
+        self.ui.fileSaveText.setText(save_path)
+
+    def gen_ical(self, start_date, file_path, save_path):
+        if all([start_date, file_path, save_path]) is False:
             QMessageBox.warning(
                 self.ui,
                 "错误",
@@ -55,7 +68,7 @@ class timetable_to_ics():
             dt = datetime.date(int(year), int(month), int(day))
             try:
                 cal = mkical(data, dt, isDebug)
-                f = open("timetable.ics", 'wb')
+                f = open(save_path, 'wb')
                 f.write(cal.to_ical())
                 f.close()
                 QMessageBox.information(
@@ -70,7 +83,6 @@ class timetable_to_ics():
                     "请检查是否文件存在问题，是否存在中文文件名称以及中文路径。"
                 )
 
-
     def file_select(self):
         file_fileter = "XLSX(*.xlsx)"
         fd = QFileDialog.getOpenFileName(self.ui, "请选择课表文件", filter=file_fileter)
@@ -84,6 +96,7 @@ class timetable_to_ics():
             "选择文件并填写行课日期，点击 OK 开始生成课表文件。"
 
         )
+
 
 if __name__ == '__main__':
     app = QApplication([])
