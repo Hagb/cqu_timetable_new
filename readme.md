@@ -3,7 +3,7 @@
 ## 使用说明
 使用 pip 安装依赖：
 ```bash
-pip install .
+pip install cqu_timetable_new
 ```
 
 ### 直接运行 (demo)
@@ -34,7 +34,7 @@ cqu_timetable_new
 
 使用 pip 安装依赖：
 ```bash
-pip install .[tk]
+pip install cqu_timetable_new[tk]
 ```
 之后可运行
 ```bash
@@ -46,7 +46,7 @@ cqu_timetable_new-tk
 
 使用 pip 安装依赖：
 ```bash
-pip install .[pyqt]
+pip install cqu_timetable_new[pyqt]
 ```
 之后可运行
 ```bash
@@ -65,7 +65,19 @@ cqu_timetable_new-qt
 
     使用 `mkical` 函数，第一个参数是上一步得到的课表数据，第二个参数是 `datetime.date` 类型的开学日期，返回 `icalendar.Calendar` 类型的日历数据，可通过其 `to_ical` 得到 ics 文件的内容。
 
-demo 可见于 [main.py](main.py) 中的 `main` 函数
+example:
+```python
+from cqu_timetable_new import mkical, loadIO_from_xlsx
+from datetime import date
+xlsx_path = "Downloads/课表.xlsx"     # 课表 xlsx 文件路径
+ical_path = "课表.ics"                # 要保存的日历文件的路径
+data = loadIO_from_xlsx(xlsx_path)    # 从 xlsx 文件中中加载课表数据
+ical = mkical(data, date(2021,3,1))   # 生成日历，2021.3.1（必须是周一）开学
+with open(ical_path, 'wb') as file_:  # 保存 ics 文件时应用二进制模式打开
+    file_.write(ical.to_ical())       # 用 to_ical 方法可导出日历数据（类型为 bytes）
+```
+
+另有 demo 可见于 [cqu\_timetable\_new/\_\_init\_\_.py](cqu_timetable_new/__init__.py) 中的 `main` 函数
 
 ## FAQ
 Q: 为什么不带有登录功能？</br>
