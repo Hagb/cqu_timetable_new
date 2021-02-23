@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import datetime
 import sys
 
@@ -5,7 +7,7 @@ from PySide2.QtCore import QFile, QCoreApplication
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QApplication, QFileDialog, QMessageBox
 
-from main import load_from_xlsx, mkical
+from cqu_timetable_new import load_from_xlsx, mkical
 
 
 class timetable_to_ics():
@@ -60,7 +62,7 @@ class timetable_to_ics():
                 "请勿输入空值"
             )
         else:
-            data = load_from_xlsx(file_path)
+            data = loadIO_from_xlsx(file_path)
             isDebug = False
             year = start_date[0:4]
             month = start_date[4:6]
@@ -97,10 +99,12 @@ class timetable_to_ics():
 
         )
 
-
-if __name__ == '__main__':
+def main():
     app = QApplication([])
     app.setStyle('Fusion')
     mainWindow = timetable_to_ics()
     mainWindow.ui.show()
     sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()

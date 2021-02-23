@@ -2,3 +2,4 @@ icalendar
 openpyxl
 configparser
 pyside2
+cqu-timetable-new
