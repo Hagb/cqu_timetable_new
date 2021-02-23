@@ -6,7 +6,7 @@ import sys
 from PySide2.QtCore import QFile, QCoreApplication
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QApplication, QFileDialog, QMessageBox, QMainWindow
-from layout import Ui_MainWindow
+from .layout import Ui_MainWindow
 
 from cqu_timetable_new import loadIO_from_xlsx, mkical
 
