@@ -42,6 +42,18 @@ cqu_timetable_new-tk
 ```
 启动 tkinter 前端。
 
+###  Qt5 前端
+
+使用 pip 安装依赖：
+```bash
+pip install .[pyqt]
+```
+之后可运行
+```bash
+cqu_timetable_new-qt
+```
+启动 Qt5 前端。
+
 ### 作为库来使用
 
 使用时需要先生成课表数据，再从课表数据中生成日历
