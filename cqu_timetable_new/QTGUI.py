@@ -99,10 +99,12 @@ class timetable_to_ics():
 
         )
 
-
-if __name__ == '__main__':
+def main():
     app = QApplication([])
     app.setStyle('Fusion')
     mainWindow = timetable_to_ics()
     mainWindow.ui.show()
     sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
