@@ -10,11 +10,11 @@ keywords = ["ics", "cqu", "icalendar", "timetable"]
 include = ["readme.md"]
 
 [tool.poetry.dependencies]
-python = "~3.8"
+python = "3.9.1"
 icalendar = "^4.0.7"
 openpyxl = "^3.0.6"
 easygui = {version = "^0.98.2", optional = true}
-pyside2 = {version = "~5.15.2", optional = true}
+pyside2 = {version = "5.15.2", optional = true}
 
 [tool.poetry.extras]
 tk = ['easygui']
