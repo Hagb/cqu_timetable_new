@@ -167,20 +167,21 @@ def mkevent(data, cal, dt, isDebug=False):
                                                       minutes=time_dict[int(start_class)][0][1])
                 class_end_time = datetime.timedelta(hours=time_dict[int(end_class)][1][0],
                                                     minutes=time_dict[int(end_class)][1][1])
+                dtstart = class_start_date + class_start_time
+                dtend = class_start_date + class_end_time
+                namespace = uuid.UUID(
+                    bytes=int(dtstart.timestamp()).to_bytes(length=8, byteorder='big') +
+                    int(dtend.timestamp()).to_bytes(length=8, byteorder='big')
+                )
             else:
-                class_start_time = datetime.timedelta(hours=8, minutes=30)
-                class_end_time = datetime.timedelta(hours=21, minutes=35)
-                class_start_date = dt + \
-                    datetime.timedelta(weeks=int(start_week) - 1)
-                count = (int(end_week) - int(start_week) + 1) * 7
-                event.add("RRULE", {"freq": "daily", "count": count})
-
-            dtstart = class_start_date + class_start_time
-            dtend = class_start_date + class_end_time
-            namespace = uuid.UUID(
-                bytes=int(dtstart.timestamp()).to_bytes(length=8, byteorder='big') +
-                int(dtend.timestamp()).to_bytes(length=8, byteorder='big')
-            )
+                dtstart = (dt +
+                           datetime.timedelta(weeks=int(start_week) - 1)).date()
+                dtend = (dt +
+                         datetime.timedelta(weeks=int(end_week))).date()
+                namespace = uuid.UUID(
+                    bytes=int(dtstart.toordinal()).to_bytes(length=8, byteorder='big') +
+                    int(dtend.toordinal()).to_bytes(length=8, byteorder='big')
+                )
 
             add_datetime(event, 'DTEND', dtend)
             add_datetime(event, 'DTSTART', dtstart)
