@@ -83,6 +83,9 @@ with open(ical_path, 'wb') as file_:  # 保存 ics 文件时应用二进制模�
 Q: 为什么不带有登录功能？</br>
 A： 因为我懒。如果你能做出带有登录功能的脚本请随意 pr 。我只信得过可以下载的自动生成的课表。
 （主要还是依赖项少一些）
+
+Q：为什么导出的日历文件中有原课表中没有的整周课程？<br/>
+A：有一些课程（尤其是实验课，如果你见到有非实验课的这类课程，欢迎告诉我们）在 `已选课程` 中会显示有整周的时间段，但课表中那个时间段不会显示出来。技术性地说，是该整周时间段在 json 中的 `notArrangeTimeAndRoom`,`wholeWeekOccupy` 两个属性同时为假。我们尚不知道这些时间段的意义（如果你知道，欢迎告诉我们），如果使用 xlsx 来导入，请自行提前将 xlsx 中这些时间段对应的行删去；如果使用 json 来导入，我们默认会按照和原课表相同的处理方式处理（可以给 `loadIO_from_json` 或 `load_from_json` 传 `force_whole_week=True` 参数将这部分时间段也包含进日历里）。
 ## 姊妹项目
 [cm-http-api](https://github.com/weearc/cm-http-api) （开发中）
 ## LICENSES
