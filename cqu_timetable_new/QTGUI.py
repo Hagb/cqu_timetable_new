@@ -2,6 +2,7 @@
 
 import datetime
 import sys
+import traceback
 
 from PySide2.QtCore import QFile, QCoreApplication
 from PySide2.QtUiTools import QUiLoader
@@ -58,7 +59,8 @@ class timetable_to_ics(QMainWindow):
 
     def get_save_path(self):
         file_fileter = "iCalendar(*.ics)"
-        fd = QFileDialog.getSaveFileName(self, "请选择保存位置", "timetable.ics", filter=file_fileter)
+        fd = QFileDialog.getSaveFileName(
+            self, "请选择保存位置", "timetable.ics", filter=file_fileter)
         if fd[0][-4:].lower() != ".ics":
             save_path = fd[0] + ".ics"
         else:
@@ -73,13 +75,13 @@ class timetable_to_ics(QMainWindow):
                 "请勿输入空值"
             )
         else:
-            data = loadIO_from_xlsx(file_path)
-            isDebug = False
-            year = start_date[0:4]
-            month = start_date[4:6]
-            day = start_date[6:]
-            dt = datetime.date(int(year), int(month), int(day))
             try:
+                data = loadIO_from_xlsx(file_path)
+                isDebug = False
+                year = start_date[0:4]
+                month = start_date[4:6]
+                day = start_date[6:]
+                dt = datetime.date(int(year), int(month), int(day))
                 cal = mkical(data, dt, isDebug)
                 f = open(save_path, 'wb')
                 f.write(cal.to_ical())
@@ -90,10 +92,10 @@ class timetable_to_ics(QMainWindow):
                     "导出完成！\n请关闭本程序并使用手机日历打开导出的 ICS 文件。"
                 )
             except Exception as e:
-                QMessageBox.warning(
+                QMessageBox.critical(
                     self,
                     "",
-                    "请检查是否文件存在问题，是否存在中文文件名称以及中文路径。"
+                    "请检查输入是否有误，若无法排除请向作者反馈\n错误信息：\n" + traceback.format_exc()
                 )
 
     def file_select(self):
@@ -109,6 +111,7 @@ class timetable_to_ics(QMainWindow):
             "选择文件并填写行课日期，点击 OK 开始生成课表文件。"
 
         )
+
 
 def main():
     """
@@ -127,6 +130,7 @@ def main():
     mainWindow = timetable_to_ics()
     mainWindow.show()
     sys.exit(app.exec_())
+
 
 if __name__ == "__main__":
     main()
