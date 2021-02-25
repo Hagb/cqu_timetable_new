@@ -73,11 +73,12 @@ def loadIO_from_xlsx(file):
     return list(ws.values)[2:]
 
 
-def load_from_json(data):
+def load_from_json(data, force_whole_week=False):
     """从 json 中加载课表数据
 
     Args:
         data (str or bytes): json 文件数据
+        force_whole_week (bool): 是否保留不在原课表中出现的整周时间段，默认 False
 
     Returns:
         list[tuple]: 课表数据
@@ -89,19 +90,28 @@ def load_from_json(data):
               cour["weekDayFormat"], cour["periodFormat"]),
              cour["roomName"],
              ','.join(i["instructorName"] for i in cour["classTimetableInstrVOList"]))
-            for cour in timetable]
+            for cour in timetable
+            if force_whole_week
+            or cour['periodFormat']
+            or cour['notArrangeRoom']
+            or cour['notArrangeTimeAndRoom']
+            or cour['wholeWeekOccupy']
+            ]
 
 
-def loadIO_from_json(file):
+def loadIO_from_json(file, force_whole_week=False):
     """从 json 中加载课表数据
 
     Args:
         file (str or stream): json 文件的文件名或数据流
+        force_whole_week (bool): 是否保留不在原课表中出现的整周时间段，默认 False
 
     Returns:
         list[tuple]: 课表数据
     """
-    return load_from_json((open(file) if isinstance(file, str) else file).read())
+    return load_from_json(
+        (open(file) if isinstance(file, str) else file).read(),
+        force_whole_week=force_whole_week)
 
 
 def split_range(string):
