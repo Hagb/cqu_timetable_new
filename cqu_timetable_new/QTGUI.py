@@ -9,7 +9,7 @@ from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QApplication, QFileDialog, QMessageBox, QMainWindow
 from .layout import Ui_MainWindow
 
-from cqu_timetable_new import loadIO_from_xlsx, mkical
+from cqu_timetable_new import loadIO_from_xlsx, mkical, loadIO_from_json
 
 
 class timetable_to_ics(QMainWindow):
@@ -76,7 +76,9 @@ class timetable_to_ics(QMainWindow):
             )
         else:
             try:
-                data = loadIO_from_xlsx(file_path)
+                data = loadIO_from_xlsx(
+                    file_path) if file_path[-5:].lower() == '.xlsx' \
+                    else loadIO_from_json(file_path)
                 isDebug = False
                 year = start_date[0:4]
                 month = start_date[4:6]
@@ -99,7 +101,7 @@ class timetable_to_ics(QMainWindow):
                 )
 
     def file_select(self):
-        file_fileter = "XLSX(*.xlsx)"
+        file_fileter = "XLSX (*.xlsx) ;; JSON (*.json)"
         fd = QFileDialog.getOpenFileName(self, "请选择课表文件", filter=file_fileter)
         self.ui.fileSelectText.setText(fd[0])
 
