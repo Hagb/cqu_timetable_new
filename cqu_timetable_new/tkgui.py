@@ -5,7 +5,7 @@ try:
 except ImportError:
     print('Please install easygui!', file=sys.stderr)
     sys.exit(1)
-from cqu_timetable_new import mkical, loadIO_from_xlsx
+from cqu_timetable_new import mkical, loadIO_from_xlsx, loadIO_from_json
 from datetime import date
 
 init_msg = \
@@ -39,14 +39,18 @@ if not easygui.msgbox(init_msg):
 if not easygui.msgbox(disclaimer, title="免责声明", ok_button="已知晓潜在的风险并自行承担"):
     sys.exit()
 inputFile = easygui.fileopenbox(
-    "选择下载的 excel 文件", filetypes='*.xlsx', default="*.xlsx")
+    "请选择课表文件",
+    filetypes=['*.xlsx', '*.json', '*'], default='*.xlsx')
 if not inputFile:
     sys.exit()
 dateStr = easygui.enterbox("输入开学时间（必须是周一），例：20210301",
                            title="输入开学时间", default="20210301")
 try:
-    ics = mkical(loadIO_from_xlsx(inputFile), date(
-        int(dateStr[:4]), int(dateStr[4:6]), int(dateStr[6:])))
+    ics = mkical(
+        (loadIO_from_xlsx if inputFile[-5:].lower()
+         == '.xlsx' else loadIO_from_json)(inputFile),
+        date(
+            int(dateStr[:4]), int(dateStr[4:6]), int(dateStr[6:])))
 except Exception:
     easygui.exceptionbox("请检查输入是否有误")
     sys.exit()
