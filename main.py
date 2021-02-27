@@ -7,8 +7,8 @@ from openpyxl import load_workbook
 from icalendar import Calendar, Event, Timezone, vDDDTypes
 
 
-__all__ = ('mkical', 'loadIO_from_xlsx', 'load_from_xlsx',
-           'loadIO_from_json', 'load_from_json')
+__all__ = ('mkical', 'load_from_xlsx', 'loadIO_from_xlsx',
+           'load_from_json', 'loadIO_from_json')
 
 VTIMEZONE = Timezone.from_ical("""BEGIN:VTIMEZONE
 TZID:Asia/Shanghai
@@ -48,7 +48,7 @@ week_dic = {
 }
 
 
-def loadIO_from_xlsx(data):
+def load_from_xlsx(data):
     """从 xlsx 中加载课表数据
 
     Args:
@@ -57,10 +57,10 @@ def loadIO_from_xlsx(data):
     Returns:
         list[tuple]: 课表数据
     """
-    return load_from_xlsx(BytesIO(data))
+    return loadIO_from_xlsx(BytesIO(data))
 
 
-def load_from_xlsx(file):
+def loadIO_from_xlsx(file):
     """从 xlsx 中加载课表数据
 
     Args:
@@ -73,11 +73,12 @@ def load_from_xlsx(file):
     return list(ws.values)[2:]
 
 
-def loadIO_from_json(data):
+def load_from_json(data, force_whole_week=False):
     """从 json 中加载课表数据
 
     Args:
         data (str or bytes): json 文件数据
+        force_whole_week (bool): 是否保留不在原课表中出现的整周时间段，默认 False
 
     Returns:
         list[tuple]: 课表数据
@@ -89,19 +90,28 @@ def loadIO_from_json(data):
               cour["weekDayFormat"], cour["periodFormat"]),
              cour["roomName"],
              ','.join(i["instructorName"] for i in cour["classTimetableInstrVOList"]))
-            for cour in timetable]
+            for cour in timetable
+            if force_whole_week
+            or cour['periodFormat']
+            or cour['notArrangeRoom']
+            or cour['notArrangeTimeAndRoom']
+            or cour['wholeWeekOccupy']
+            ]
 
 
-def load_from_json(file):
+def loadIO_from_json(file, force_whole_week=False):
     """从 json 中加载课表数据
 
     Args:
         file (str or stream): json 文件的文件名或数据流
+        force_whole_week (bool): 是否保留不在原课表中出现的整周时间段，默认 False
 
     Returns:
         list[tuple]: 课表数据
     """
-    return loadIO_from_json((open(file) if isinstance(file, str) else file).read())
+    return load_from_json(
+        (open(file) if isinstance(file, str) else file).read(),
+        force_whole_week=force_whole_week)
 
 
 def split_range(string):
@@ -167,20 +177,21 @@ def mkevent(data, cal, dt, isDebug=False):
                                                       minutes=time_dict[int(start_class)][0][1])
                 class_end_time = datetime.timedelta(hours=time_dict[int(end_class)][1][0],
                                                     minutes=time_dict[int(end_class)][1][1])
+                dtstart = class_start_date + class_start_time
+                dtend = class_start_date + class_end_time
+                namespace = uuid.UUID(
+                    bytes=int(dtstart.timestamp()).to_bytes(length=8, byteorder='big') +
+                    int(dtend.timestamp()).to_bytes(length=8, byteorder='big')
+                )
             else:
-                class_start_time = datetime.timedelta(hours=8, minutes=30)
-                class_end_time = datetime.timedelta(hours=21, minutes=35)
-                class_start_date = dt + \
-                    datetime.timedelta(weeks=int(start_week) - 1)
-                count = (int(end_week) - int(start_week) + 1) * 7
-                event.add("RRULE", {"freq": "daily", "count": count})
-
-            dtstart = class_start_date + class_start_time
-            dtend = class_start_date + class_end_time
-            namespace = uuid.UUID(
-                bytes=int(dtstart.timestamp()).to_bytes(length=8, byteorder='big') +
-                int(dtend.timestamp()).to_bytes(length=8, byteorder='big')
-            )
+                dtstart = (dt +
+                           datetime.timedelta(weeks=int(start_week) - 1)).date()
+                dtend = (dt +
+                         datetime.timedelta(weeks=int(end_week))).date()
+                namespace = uuid.UUID(
+                    bytes=int(dtstart.toordinal()).to_bytes(length=8, byteorder='big') +
+                    int(dtend.toordinal()).to_bytes(length=8, byteorder='big')
+                )
 
             add_datetime(event, 'DTEND', dtend)
             add_datetime(event, 'DTSTART', dtstart)
@@ -224,8 +235,8 @@ def main():
     month = start_date[4:6]
     day = start_date[6:]
     dt = datetime.date(int(year), int(month), int(day))
-    data = (load_from_xlsx
-            if base_dir[-5:].lower() == ".xlsx" else load_from_json)(base_dir)
+    data = (loadIO_from_xlsx
+            if base_dir[-5:].lower() == ".xlsx" else loadIO_from_json)(base_dir)
     cal = mkical(data, dt, isDebug)
     if isDebug is False:
         f = open(file_name, 'wb')

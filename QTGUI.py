@@ -2,27 +2,32 @@
 
 import datetime
 import sys
+import traceback
 
 from PySide2.QtCore import QFile, QCoreApplication
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QApplication, QFileDialog, QMessageBox
 
-from cqu_timetable_new import load_from_xlsx, mkical
+from main import loadIO_from_xlsx, mkical, loadIO_from_json
 
 
 class timetable_to_ics():
     def __init__(self):
+        """
+        动态加载 UI 文件（调试使用）
+        """
         super(timetable_to_ics, self).__init__()
 
         qfile = QFile('layout/mainWindow.ui')
         qfile.open(QFile.ReadOnly)
         qfile.close()
+        self.ui = QUiLoader().load(qfile)
         """
         未按下按钮却执行函数可能是因为未使用 lambda
         参考：
         https://blog.csdn.net/guge907/article/details/23291763
         """
-        self.ui = QUiLoader().load(qfile)
+
         QMessageBox.information(
             self.ui,
             "关于此程序",
@@ -47,7 +52,8 @@ class timetable_to_ics():
 
     def get_save_path(self):
         file_fileter = "iCalendar(*.ics)"
-        fd = QFileDialog.getSaveFileName(self.ui, "请选择保存位置", "timetable.ics", filter=file_fileter)
+        fd = QFileDialog.getSaveFileName(
+            self.ui, "请选择保存位置", "timetable.ics", filter=file_fileter)
         if fd[0][-4:].lower() != ".ics":
             save_path = fd[0] + ".ics"
         else:
@@ -62,13 +68,15 @@ class timetable_to_ics():
                 "请勿输入空值"
             )
         else:
-            data = loadIO_from_xlsx(file_path)
-            isDebug = False
-            year = start_date[0:4]
-            month = start_date[4:6]
-            day = start_date[6:]
-            dt = datetime.date(int(year), int(month), int(day))
             try:
+                data = loadIO_from_xlsx(
+                    file_path) if file_path[-5:].lower() == '.xlsx' \
+                    else loadIO_from_json(file_path)
+                isDebug = False
+                year = start_date[0:4]
+                month = start_date[4:6]
+                day = start_date[6:]
+                dt = datetime.date(int(year), int(month), int(day))
                 cal = mkical(data, dt, isDebug)
                 f = open(save_path, 'wb')
                 f.write(cal.to_ical())
@@ -79,14 +87,14 @@ class timetable_to_ics():
                     "导出完成！\n请关闭本程序并使用手机日历打开导出的 ICS 文件。"
                 )
             except Exception as e:
-                QMessageBox.warning(
+                QMessageBox.critical(
                     self.ui,
                     "",
-                    "请检查是否文件存在问题，是否存在中文文件名称以及中文路径。"
+                    "请检查输入是否有误，若无法排除请向作者反馈\n错误信息：\n" + traceback.format_exc()
                 )
 
     def file_select(self):
-        file_fileter = "XLSX(*.xlsx)"
+        file_fileter = "XLSX (*.xlsx) ;; JSON (*.json)"
         fd = QFileDialog.getOpenFileName(self.ui, "请选择课表文件", filter=file_fileter)
         self.ui.fileSelectText.setText(fd[0])
 
@@ -99,12 +107,18 @@ class timetable_to_ics():
 
         )
 
+
 def main():
+    """
+    动态加载 UI 使用
+    """
     app = QApplication([])
     app.setStyle('Fusion')
     mainWindow = timetable_to_ics()
     mainWindow.ui.show()
     sys.exit(app.exec_())
+
+
 
 if __name__ == "__main__":
     main()
