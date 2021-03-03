@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cqu_timetable_new"
-version = "0.3.2.12"
+version = "0.3.2.13"
 description = "Generate CQU timetable iCalendar (ics) file"
 authors = ["weearc <qby19981121@gmail.com>"]
 license = "AGPL-3.0-only"
