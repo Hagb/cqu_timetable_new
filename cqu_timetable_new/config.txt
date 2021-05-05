@@ -3,3 +3,5 @@ debug = False
 base_dir = /home/ddqi/kb.xlsx
 start_date = 20210301
 file_name = timetable.ics
+alarm = True
+duration = 15

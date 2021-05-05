@@ -6,7 +6,6 @@ from io import BytesIO
 from openpyxl import load_workbook
 from icalendar import Calendar, Event, Timezone, vDDDTypes
 
-
 __all__ = ('mkical', 'load_from_xlsx', 'loadIO_from_xlsx',
            'load_from_json', 'loadIO_from_json')
 
@@ -150,7 +149,7 @@ def add_datetime(component, name, time):
     component.add(name, vdatetime)
 
 
-def mkevent(data, cal, dt, isDebug=False):
+def mkevent(data, cal, dt, duration, alarm=False, isDebug=False):
     if not data[0]:
         assert not (data[1] or data[2] or data[3] or data[4])
         return
@@ -159,11 +158,12 @@ def mkevent(data, cal, dt, isDebug=False):
     event_class = Event()
     event_class.add('SUMMARY', data[0])
     if data[3] is not None:
-        event_class.add('LOCATION', data[3])
+        dsp = data[3]
     if data[4] is not None:
-        event_class.add('DESCRIPTION', "教师:" + data[4] + "\n教学班号:" + data[1])
+        dsp = "教师:" + data[4] + "\n教学班号:" + data[1]
     else:
-        event_class.add('DESCRIPTION', "教学班号:" + data[1])
+        dsp = "教学班号:" + data[1]
+    event_class.add('DESCRIPTION', dsp)
     for start_class, end_class in classes:
         for start_week, end_week in weeks:
             event = event_class.copy()
@@ -171,8 +171,8 @@ def mkevent(data, cal, dt, isDebug=False):
                 count = int(end_week) - int(start_week) + 1
                 event.add("RRULE", {"freq": "weekly", "count": count})
                 class_start_date = dt + \
-                    datetime.timedelta(weeks=int(start_week) - 1,
-                                       days=week_dic[week_day] - 1)
+                                   datetime.timedelta(weeks=int(start_week) - 1,
+                                                      days=week_dic[week_day] - 1)
                 class_start_time = datetime.timedelta(hours=time_dict[int(start_class)][0][0],
                                                       minutes=time_dict[int(start_class)][0][1])
                 class_end_time = datetime.timedelta(hours=time_dict[int(end_class)][1][0],
@@ -181,7 +181,7 @@ def mkevent(data, cal, dt, isDebug=False):
                 dtend = class_start_date + class_end_time
                 namespace = uuid.UUID(
                     bytes=int(dtstart.timestamp()).to_bytes(length=8, byteorder='big') +
-                    int(dtend.timestamp()).to_bytes(length=8, byteorder='big')
+                          int(dtend.timestamp()).to_bytes(length=8, byteorder='big')
                 )
             else:
                 dtstart = (dt +
@@ -190,7 +190,7 @@ def mkevent(data, cal, dt, isDebug=False):
                          datetime.timedelta(weeks=int(end_week))).date()
                 namespace = uuid.UUID(
                     bytes=int(dtstart.toordinal()).to_bytes(length=8, byteorder='big') +
-                    int(dtend.toordinal()).to_bytes(length=8, byteorder='big')
+                          int(dtend.toordinal()).to_bytes(length=8, byteorder='big')
                 )
 
             add_datetime(event, 'DTEND', dtend)
@@ -198,13 +198,28 @@ def mkevent(data, cal, dt, isDebug=False):
             event.add('UID', uuid.uuid3(namespace, data[0] + "-" + data[1]))
 
             event.add('DTSTAMP', datetime.datetime.now())
+
+            '''
+            TRIGGER:-PT24H
+            REPEAT:1
+            DURATION:PT15M
+            ACTION:DISPLAY
+            '''
+            if alarm:
+                event.add('TRIGGER', datetime.timedelta(minutes=0-duration))
+                event.add('REPEAT', "1")
+                event.add('ACTION', "DISPLAY")
+
             cal.add_component(event)
 
 
-def mkical(data, start_date, isDebug=False):
+def mkical(data, start_date, duration, alarm=False, isDebug=False):
     """生成日历
 
     Args:
+        duration : 设置提醒时间，单位：分钟
+        isDebug : 是否开启调试
+        alarm : 是否设置提醒
         data (list[tuple]): 课表数据
         start_date (datetime.date): 开学日期，必须是星期一
 
@@ -220,7 +235,7 @@ def mkical(data, start_date, isDebug=False):
     dt = datetime.datetime.combine(
         start_date, datetime.time(), tzinfo=TIMEZONE)
     for items in data:
-        mkevent(items, cal, dt, isDebug)
+        mkevent(items, cal, dt, duration, alarm, isDebug)
     return cal
 
 
@@ -231,13 +246,16 @@ def main():
     base_dir = config.get('config', 'base_dir')
     start_date = config.get('config', 'start_date')
     file_name = config.get('config', 'file_name')
+    alarm = config.getboolean('config', 'alarm')
+    duration = config.getfloat('config', 'duration')
+
     year = start_date[0:4]
     month = start_date[4:6]
     day = start_date[6:]
     dt = datetime.date(int(year), int(month), int(day))
     data = (loadIO_from_xlsx
             if base_dir[-5:].lower() == ".xlsx" else loadIO_from_json)(base_dir)
-    cal = mkical(data, dt, isDebug)
+    cal = mkical(data, dt, duration, alarm, isDebug)
     if isDebug is False:
         f = open(file_name, 'wb')
         f.write(cal.to_ical())
