@@ -15,6 +15,8 @@ debug = False
 base_dir = /home/ddqi/kb.xlsx
 start_date = 20210301
 file_name = timetable.ics
+alarm = True
+duration = 15
 ```
 
 |配置项|类型|示例|注释|
@@ -23,6 +25,8 @@ file_name = timetable.ics
 |base_dir|str|/home/ddqi/kb.xlsx|指向课表文件的路径|
 |start_date|str|20210301|行课日期|
 |file_name|str|timetable.ics|生成的 ics 文件名（为避免编码问题不要用中文），扩展名请勿更改，文件名不可包含中文|
+|alarm|boolean|True|是否开启提醒|
+|duration|Int|15|提前提醒时间，单位：分钟|
 
 将配置文件 `config.txt` 放置在工作目录下，终端执行：
 ```bash
