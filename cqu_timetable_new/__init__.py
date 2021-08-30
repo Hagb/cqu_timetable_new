@@ -158,6 +158,7 @@ def mkevent(data, cal, dt, duration, alarm=False, isDebug=False):
     event_class = Event()
     event_class.add('SUMMARY', data[0])
     if data[3] is not None:
+        event_class.add('LOCATION', data[3])
         dsp = data[3]
     if data[4] is not None:
         dsp = "教师:" + data[4] + "\n教学班号:" + data[1]
