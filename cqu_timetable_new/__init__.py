@@ -82,20 +82,24 @@ def load_from_json(data, force_whole_week=False):
     Returns:
         list[tuple]: 课表数据
     """
-    timetable = json.loads(data)["data"]
-    return [(cour["courseName"],
-             cour["classNbr"],
-             (cour["teachingWeekFormat"],
-              cour["weekDayFormat"], cour["periodFormat"]),
-             cour["roomName"],
-             ','.join(i["instructorName"] for i in cour["classTimetableInstrVOList"]))
-            for cour in timetable
-            if force_whole_week
-            or cour['periodFormat']
-            or cour['notArrangeRoom']
-            or cour['notArrangeTimeAndRoom']
-            or cour['wholeWeekOccupy']
-            ]
+    raw_data = json.loads(data)
+    timetable = raw_data.get("data") or raw_data["classTimetableVOList"]
+    return [
+        (
+            cour["courseName"],
+            cour["classNbr"],
+            (cour["teachingWeekFormat"],
+             cour["weekDayFormat"], cour["periodFormat"]),
+            cour["roomName"],
+            cour.get("instructorName")
+            or ','.join(i["instructorName"] for i in cour["classTimetableInstrVOList"])
+        )
+        for cour in timetable if (force_whole_week
+                                  or cour['periodFormat']
+                                  or cour['notArrangeRoom']
+                                  or cour['notArrangeTimeAndRoom']
+                                  or cour['wholeWeekOccupy'])
+    ]
 
 
 def loadIO_from_json(file, force_whole_week=False):
