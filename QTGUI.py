@@ -7,7 +7,7 @@ import traceback
 from PySide2.QtCore import QFile, QCoreApplication
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QApplication, QFileDialog, QMessageBox
-
+import webbrowser
 from main import loadIO_from_xlsx, mkical, loadIO_from_json
 
 
@@ -47,8 +47,11 @@ class timetable_to_ics():
         self.ui.runOnBox.rejected.connect(lambda: QCoreApplication.quit())
         self.ui.runOnBox.accepted.connect(lambda: self.gen_ical(self.ui.startDate.text(),
                                                                 self.ui.fileSelectText.text(),
-                                                                self.ui.fileSaveText.text()))
+                                                                self.ui.fileSaveText.text(),
+                                                                self.ui.alarmCheck.isChecked(),
+                                                                self.ui.durationText.text()))
         self.ui.BFileSave.clicked.connect(lambda: self.get_save_path())
+        self.ui.BBrowser.clicked.connect(lambda: webbrowser.open('http://my.cqu.edu.cn/enroll/'))
 
     def get_save_path(self):
         file_fileter = "iCalendar(*.ics)"
@@ -60,7 +63,7 @@ class timetable_to_ics():
             save_path = fd[0]
         self.ui.fileSaveText.setText(save_path)
 
-    def gen_ical(self, start_date, file_path, save_path):
+    def gen_ical(self, start_date, file_path, save_path, isAlarm, duration):
         if all([start_date, file_path, save_path]) is False:
             QMessageBox.warning(
                 self.ui,
@@ -77,7 +80,9 @@ class timetable_to_ics():
                 month = start_date[4:6]
                 day = start_date[6:]
                 dt = datetime.date(int(year), int(month), int(day))
-                cal = mkical(data, dt, isDebug)
+                alarm = isAlarm
+                duration = int(duration)
+                cal = mkical(data, dt, duration, alarm, isDebug)
                 f = open(save_path, 'wb')
                 f.write(cal.to_ical())
                 f.close()
@@ -113,7 +118,7 @@ def main():
     动态加载 UI 使用
     """
     app = QApplication([])
-    app.setStyle('Fusion')
+    app.setStyle('Breeze')
     mainWindow = timetable_to_ics()
     mainWindow.ui.show()
     sys.exit(app.exec_())
