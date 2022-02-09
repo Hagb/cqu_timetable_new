@@ -7,19 +7,19 @@
     <x>0</x>
     <y>0</y>
     <width>560</width>
-    <height>196</height>
+    <height>244</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>482</width>
-    <height>196</height>
+    <height>244</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>560</width>
-    <height>212</height>
+    <height>300</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -29,6 +29,9 @@
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QLineEdit" name="startDate">
+      <property name="toolTip">
+       <string>什么时间行课请看校历</string>
+      </property>
       <property name="placeholderText">
        <string>请填写行课日期，如 20210301</string>
       </property>
@@ -86,6 +89,43 @@
         </property>
         <property name="text">
          <string>...</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <widget class="QCheckBox" name="alarmCheck">
+        <property name="toolTip">
+         <string>部分机型可能并不生效</string>
+        </property>
+        <property name="whatsThis">
+         <string>部分机型可能并不生效</string>
+        </property>
+        <property name="text">
+         <string comment="部分机型可能不生效">提醒开启</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="durationText">
+        <property name="toolTip">
+         <string>仅当开启提醒后生效</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="placeholderText">
+         <string>提醒提前时间（分钟）</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="BBrowser">
+        <property name="text">
+         <string>前往 my.cqu.edu.cn</string>
         </property>
        </widget>
       </item>
