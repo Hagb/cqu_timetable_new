@@ -150,7 +150,8 @@ def add_datetime(component, name, time):
     component.add(name, vdatetime)
 
 
-def mkevent(data, cal, dt, isDebug=False):
+
+def mkevent(data, cal, dt, duration=15, alarm=False, isDebug=False):
     if not data[0]:
         assert not (data[1] or data[2] or data[3] or data[4])
         return
@@ -201,7 +202,8 @@ def mkevent(data, cal, dt, isDebug=False):
             cal.add_component(event)
 
 
-def mkical(data, start_date, isDebug=False):
+
+def mkical(data, start_date, duration=15, alarm=False, isDebug=False):
     """生成日历
 
     Args:
