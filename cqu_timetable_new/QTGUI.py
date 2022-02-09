@@ -3,6 +3,7 @@
 import datetime
 import sys
 import traceback
+import webbrowser
 
 from PySide2.QtCore import QFile, QCoreApplication
 from PySide2.QtUiTools import QUiLoader
@@ -54,8 +55,11 @@ class timetable_to_ics(QMainWindow):
         self.ui.runOnBox.rejected.connect(lambda: QCoreApplication.quit())
         self.ui.runOnBox.accepted.connect(lambda: self.gen_ical(self.ui.startDate.text(),
                                                                 self.ui.fileSelectText.text(),
-                                                                self.ui.fileSaveText.text()))
+                                                                self.ui.fileSaveText.text(),
+                                                                self.ui.alarmCheck.isChecked(),
+                                                                self.ui.durationText.text()))
         self.ui.BFileSave.clicked.connect(lambda: self.get_save_path())
+        self.ui.BBrowser.clicked.connect(lambda: webbrowser.open("http://my.cqu.edu.cn/enroll/"))
 
     def get_save_path(self):
         file_fileter = "iCalendar(*.ics)"
@@ -67,7 +71,7 @@ class timetable_to_ics(QMainWindow):
             save_path = fd[0]
         self.ui.fileSaveText.setText(save_path)
 
-    def gen_ical(self, start_date, file_path, save_path):
+    def gen_ical(self, start_date, file_path, save_path, duration, isAlarm):
         if all([start_date, file_path, save_path]) is False:
             QMessageBox.warning(
                 self,
@@ -84,7 +88,9 @@ class timetable_to_ics(QMainWindow):
                 month = start_date[4:6]
                 day = start_date[6:]
                 dt = datetime.date(int(year), int(month), int(day))
-                cal = mkical(data, dt, isDebug)
+                duration = int(duration)
+                alarm = isAlarm
+                cal = mkical(data, dt, duration, alarm, isDebug)
                 f = open(save_path, 'wb')
                 f.write(cal.to_ical())
                 f.close()
@@ -128,7 +134,7 @@ def main():
     加载为库文件使用
     """
     app = QApplication([])
-    app.setStyle('Fusion')
+    app.setStyle('Breeze')
     mainWindow = timetable_to_ics()
     mainWindow.show()
     sys.exit(app.exec_())
