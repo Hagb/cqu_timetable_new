@@ -88,7 +88,7 @@ class timetable_to_ics(QMainWindow):
                 month = start_date[4:6]
                 day = start_date[6:]
                 dt = datetime.date(int(year), int(month), int(day))
-                duration = int(duration)
+                duration = int(duration or 0)
                 alarm = isAlarm
                 cal = mkical(data, dt, duration, alarm, isDebug)
                 f = open(save_path, 'wb')
