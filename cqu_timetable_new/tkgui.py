@@ -43,14 +43,15 @@ inputFile = easygui.fileopenbox(
     filetypes=['*.xlsx', '*.json', '*'], default='*.xlsx')
 if not inputFile:
     sys.exit()
-dateStr = easygui.enterbox("输入开学时间（必须是周一），例：20210301",
-                           title="输入开学时间", default="20210301")
+dateStr = easygui.enterbox("输入开学时间（必须是周一），例：20220214",
+                           title="输入开学时间", default="20220214")
+
 try:
     ics = mkical(
         (loadIO_from_xlsx if inputFile[-5:].lower()
          == '.xlsx' else loadIO_from_json)(inputFile),
         date(
-            int(dateStr[:4]), int(dateStr[4:6]), int(dateStr[6:])))
+            int(dateStr[:4]), int(dateStr[4:6]), int(dateStr[6:])),0)
 except Exception:
     easygui.exceptionbox("请检查输入是否有误")
     sys.exit()
